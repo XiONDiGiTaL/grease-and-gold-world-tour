@@ -1,0 +1,25 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/game.gd" id="1_game"]
+[ext_resource type="Script" path="res://scripts/stage_01_hq.gd" id="2_stage"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_game")
+
+[node name="Stage01HQ" type="Node2D" parent="."]
+script = ExtResource("2_stage")
+
+[node name="Camera2D" type="Camera2D" parent="Stage01HQ"]
+position = Vector2(240, 135)
+position_smoothing_enabled = true
+position_smoothing_speed = 6.0
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="HUD" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2

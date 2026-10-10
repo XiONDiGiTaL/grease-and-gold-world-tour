@@ -1,0 +1,8 @@
+[gd_resource type="Resource" format=3]
+
+[resource]
+resource_name = "Corporate Heavy"
+metadata/max_health = 170
+metadata/walk_speed = 62.0
+metadata/body_mass = 2.2
+metadata/behavior = "Slow, high-health charging bruiser"

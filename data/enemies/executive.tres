@@ -1,0 +1,8 @@
+[gd_resource type="Resource" format=3]
+
+[resource]
+resource_name = "Corporate Executive"
+metadata/max_health = 80
+metadata/walk_speed = 92.0
+metadata/body_mass = 1.0
+metadata/behavior = "Cautious blocker with briefcase swing"
