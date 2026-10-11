@@ -18,17 +18,13 @@ func _draw() -> void:
 	if player == null:
 		return
 
-	# Framed hero portrait
+	# Framed hero portrait - uses Ricky sprite
 	draw_rect(Rect2(9, 9, 52, 52), Color("171422"), true)
 	draw_rect(Rect2(10, 10, 50, 50), Color("e8b857"), false, 2.0)
-	draw_circle(Vector2(35, 29), 12, Color("d69465"))
-	draw_rect(Rect2(23, 16, 22, 8), Color("1c1a24"), true)
-	draw_rect(Rect2(27, 27, 16, 3), Color("3b2528"), true)
-	draw_rect(Rect2(23, 24, 22, 4), Color("b98342"), true)
-	draw_rect(Rect2(23, 25, 7, 2), Color("2b2430"), true)
-	draw_rect(Rect2(38, 25, 7, 2), Color("2b2430"), true)
-	draw_rect(Rect2(22, 41, 26, 15), Color("ae7d4f"), true)
-	draw_rect(Rect2(26, 42, 18, 14), Color("26242d"), true)
+	var portrait_tex = load("res://art/characters/ricky/frame_00.png") as Texture2D
+	if portrait_tex:
+		# Draw head area (top portion of sprite, scaled to fit 50x50)
+		draw_texture_rect_region(portrait_tex, Rect2(10, 10, 50, 50), Rect2(140, 0, 120, 120))
 
 	# Status panel
 	draw_rect(Rect2(67, 10, 241, 52), Color("11101a"), true)
