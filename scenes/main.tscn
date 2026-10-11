@@ -1,14 +1,20 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/game.gd" id="1_game"]
 [ext_resource type="Script" path="res://scripts/stage_01_hq.gd" id="2_stage"]
 [ext_resource type="Script" path="res://scripts/hud.gd" id="3_hud"]
+[ext_resource type="Texture2D" path="res://art/backgrounds/stage1_hq.png" id="4_bg"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_game")
 
 [node name="Stage01HQ" type="Node2D" parent="."]
 script = ExtResource("2_stage")
+
+[node name="Background" type="Sprite2D" parent="Stage01HQ"]
+texture = ExtResource("4_bg")
+position = Vector2(1080, -36)
+scale = Vector2(1.08, 1.08)
 
 [node name="Camera2D" type="Camera2D" parent="Stage01HQ"]
 position = Vector2(240, 135)

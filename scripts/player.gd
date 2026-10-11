@@ -17,62 +17,96 @@ var knockback := Vector2.ZERO
 var attack_timer := 0.0
 var special_timer := 0.0
 var invulnerability_timer := 0.0
+var hurt_timer := 0.0
 
 @onready var direction_marker: Polygon2D = $DirectionMarker
+@onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 
 func _physics_process(delta: float) -> void:
-    invulnerability_timer = maxf(invulnerability_timer - delta, 0.0)
-    attack_timer = maxf(attack_timer - delta, 0.0)
-    special_timer = maxf(special_timer - delta, 0.0)
+	invulnerability_timer = maxf(invulnerability_timer - delta, 0.0)
+	attack_timer = maxf(attack_timer - delta, 0.0)
+	special_timer = maxf(special_timer - delta, 0.0)
+	hurt_timer = maxf(hurt_timer - delta, 0.0)
 
-    if state == "dead":
-        return
+	if state == "dead":
+		_play_anim("down")
+		return
 
-    if attack_timer > 0.0 or special_timer > 0.0:
-        velocity = knockback
-        knockback = knockback.move_toward(Vector2.ZERO, 900.0 * delta)
-        move_and_slide()
-        return
+	if attack_timer > 0.0 or special_timer > 0.0:
+		velocity = knockback
+		knockback = knockback.move_toward(Vector2.ZERO, 900.0 * delta)
+		move_and_slide()
+		_play_anim("attack")
+		return
 
-    var input_vector := Input.get_vector("move_left", "move_right", "move_up", "move_down")
-    velocity = Vector2(input_vector.x * walk_speed, input_vector.y * walk_speed * depth_speed_multiplier)
+	if hurt_timer > 0.0:
+		velocity = knockback
+		knockback = knockback.move_toward(Vector2.ZERO, 900.0 * delta)
+		move_and_slide()
+		_play_anim("hurt")
+		return
 
-    if input_vector.x != 0.0:
-        facing = 1 if input_vector.x > 0.0 else -1
-        direction_marker.scale.x = facing
+	var input_vector := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	velocity = Vector2(input_vector.x * walk_speed, input_vector.y * walk_speed * depth_speed_multiplier)
 
-    if Input.is_action_just_pressed("attack"):
-        start_attack()
-    elif Input.is_action_just_pressed("special") and hype >= max_hype:
-        start_special()
-    elif Input.is_action_just_pressed("jump"):
-        state = "jump"
-    else:
-        state = "walk" if input_vector.length() > 0.0 else "idle"
+	if input_vector.x != 0.0:
+		facing = 1 if input_vector.x > 0.0 else -1
+		direction_marker.scale.x = facing
+		sprite.flip_h = facing < 0
 
-    move_and_slide()
+	if Input.is_action_just_pressed("attack"):
+		start_attack()
+	elif Input.is_action_just_pressed("special") and hype >= max_hype:
+		start_special()
+	elif Input.is_action_just_pressed("jump"):
+		state = "jump"
+	else:
+		state = "walk" if input_vector.length() > 0.0 else "idle"
+
+	move_and_slide()
+	_play_anim(state)
+
+func _play_anim(state_name: String) -> void:
+	var anim := "idle"
+	match state_name:
+		"idle":
+			anim = "idle"
+		"walk":
+			anim = "walk"
+		"attack", "special":
+			anim = "attack"
+		"jump":
+			anim = "idle"
+		"hurt":
+			anim = "hurt"
+		"dead", "down":
+			anim = "down"
+	if sprite.animation != anim:
+		sprite.play(anim)
 
 func start_attack() -> void:
-    state = "attack"
-    attack_timer = 0.28
-    emit_signal("attack_started", facing)
+	state = "attack"
+	attack_timer = 0.28
+	emit_signal("attack_started", facing)
 
 func start_special() -> void:
-    state = "special"
-    special_timer = 0.68
-    hype = 0.0
-    emit_signal("hype_changed", hype)
-    emit_signal("special_started", facing)
+	state = "special"
+	special_timer = 0.68
+	hype = 0.0
+	emit_signal("hype_changed", hype)
+	emit_signal("special_started", facing)
 
 func apply_hit(damage: int, push: Vector2) -> void:
-    if invulnerability_timer > 0.0:
-        return
-    health = max(health - damage, 0)
-    knockback = push
-    invulnerability_timer = 0.25
-    if health <= 0:
-        state = "dead"
+	if invulnerability_timer > 0.0:
+		return
+	health = max(health - damage, 0)
+	knockback = push
+	invulnerability_timer = 0.25
+	if health <= 0:
+		state = "dead"
+	else:
+		hurt_timer = 0.22
 
 func add_hype(amount: float) -> void:
-    hype = clampf(hype + amount, 0.0, max_hype)
-    emit_signal("hype_changed", hype)
+	hype = clampf(hype + amount, 0.0, max_hype)
+	emit_signal("hype_changed", hype)
