@@ -1,69 +1,63 @@
 extends Control
+## HUD: health/HYPE bars, score, lives. Portrait uses the real Ricky sprite.
 
 var player: CharacterBody2D
 var stage: Node2D
-var intro_timer := 3.2
+var score := 0
+var lives := 3
+var health_ratio := 1.0
+var hype_ratio := 0.0
 
-func set_player(value: CharacterBody2D) -> void:
-	player = value
+var portrait_tex: Texture2D
 
-func set_stage(value: Node2D) -> void:
-	stage = value
+func _ready() -> void:
+	portrait_tex = load("res://art/characters/ricky/frame_00.png") as Texture2D
 
-func _process(delta: float) -> void:
-	intro_timer = maxf(0.0, intro_timer - delta)
+func set_player(p: CharacterBody2D) -> void:
+	player = p
+
+func set_stage(s: Node2D) -> void:
+	stage = s
+
+func on_health_changed(value: int, maximum: int) -> void:
+	health_ratio = clampf(float(value) / float(maxi(maximum, 1)), 0.0, 1.0)
+	queue_redraw()
+
+func on_hype_changed(value: float, maximum: float) -> void:
+	hype_ratio = clampf(value / maxf(maximum, 1.0), 0.0, 1.0)
+	queue_redraw()
+
+func set_score(s: int) -> void:
+	score = s
 	queue_redraw()
 
 func _draw() -> void:
-	if player == null:
-		return
-
-	# Framed hero portrait - uses Ricky sprite
-	draw_rect(Rect2(9, 9, 52, 52), Color("171422"), true)
-	draw_rect(Rect2(10, 10, 50, 50), Color("e8b857"), false, 2.0)
-	var portrait_tex = load("res://art/characters/ricky/frame_00.png") as Texture2D
+	# Portrait frame with real Ricky sprite
+	draw_rect(Rect2(8, 8, 56, 56), Color(0.09, 0.08, 0.13), true)
 	if portrait_tex:
-		# Draw head area (top portion of sprite, scaled to fit 50x50)
-		draw_texture_rect_region(portrait_tex, Rect2(10, 10, 50, 50), Rect2(140, 0, 120, 120))
+		# Head/shoulders region of the idle sprite, cropped to the frame
+		draw_texture_rect_region(portrait_tex, Rect2(10, 10, 52, 52), Rect2(140, 20, 120, 120))
+	draw_rect(Rect2(8, 8, 56, 56), Color(0.91, 0.72, 0.34), false, 2.0)
 
-	# Status panel
-	draw_rect(Rect2(67, 10, 241, 52), Color("11101a"), true)
-	draw_rect(Rect2(67, 10, 241, 52), Color("6e4f2c"), false, 2.0)
-	draw_string(ThemeDB.fallback_font, Vector2(74, 16), "RICKY B", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color("f7d47a"))
+	# Name + bars
+	draw_string(ThemeDB.fallback_font, Vector2(72, 22), "RICKY B",
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.97, 0.83, 0.48))
+	_bar(Rect2(72, 30, 200, 12), health_ratio, Color(0.32, 0.81, 0.45), Color(0.24, 0.16, 0.21))
+	_bar(Rect2(72, 46, 200, 8), hype_ratio, Color(0.68, 0.40, 0.93), Color(0.24, 0.20, 0.36))
 
-	var health_ratio := clampf(float(player.health) / float(player.max_health), 0.0, 1.0)
-	var hype_ratio := clampf(player.hype / player.max_hype, 0.0, 1.0)
-	_bar(Rect2(74, 30, 226, 11), health_ratio, Color("52cf72"), Color("3d2a35"))
-	_bar(Rect2(74, 46, 226, 7), hype_ratio, Color("ad67ee"), Color("3c345b"))
-	draw_string(ThemeDB.fallback_font, Vector2(74, 42), "HP", HORIZONTAL_ALIGNMENT_LEFT, -1, 7, Color("1e1923"))
-	draw_string(ThemeDB.fallback_font, Vector2(74, 54), "HYPE", HORIZONTAL_ALIGNMENT_LEFT, -1, 7, Color("ece1ff"))
-
-	# Right-side stage information
-	draw_rect(Rect2(330, 10, 140, 52), Color("11101a"), true)
-	draw_rect(Rect2(330, 10, 140, 52), Color("6e4f2c"), false, 2.0)
-	draw_string(ThemeDB.fallback_font, Vector2(342, 16), "STAGE 1: G&G HQ", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("fff0bd"))
-	draw_string(ThemeDB.fallback_font, Vector2(342, 32), "LIVES  x3", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("ffffff"))
-	draw_string(ThemeDB.fallback_font, Vector2(342, 47), "SCORE  000000", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("f0c657"))
-
-	if stage != null and stage.encounter_locked:
-		draw_rect(Rect2(155, 72, 170, 21), Color(0.08, 0.06, 0.12, 0.88), true)
-		draw_rect(Rect2(155, 72, 170, 21), Color("b58543"), false, 1.0)
-		draw_string(ThemeDB.fallback_font, Vector2(176, 78), "STREET LOCKED — CLEAR WAVE", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color("ffdc73"))
-	elif stage != null and stage.active_wave > 0:
-		draw_string(ThemeDB.fallback_font, Vector2(425, 230), "GO  >>", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("8dff89"))
-
-	if intro_timer > 0.0:
-		var alpha := minf(intro_timer, 1.0)
-		draw_rect(Rect2(111, 106, 258, 50), Color(0.04, 0.03, 0.08, alpha * 0.88), true)
-		draw_rect(Rect2(111, 106, 258, 50), Color(0.84, 0.62, 0.27, alpha), false, 2.0)
-		draw_string(ThemeDB.fallback_font, Vector2(155, 117), "STAGE 1", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1, 0.86, 0.48, alpha))
-		draw_string(ThemeDB.fallback_font, Vector2(130, 136), "GREASE & GOLD HEADQUARTERS", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(1, 1, 1, alpha))
-
-	draw_string(ThemeDB.fallback_font, Vector2(12, 261), "WASD / ARROWS: MOVE     Z: FLAG ATTACK     X: SPECIAL     SPACE: JUMP", HORIZONTAL_ALIGNMENT_LEFT, -1, 7, Color("cbbdba"))
+	# Score / lives
+	draw_string(ThemeDB.fallback_font, Vector2(300, 22), "SCORE %06d" % score,
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.94, 0.78, 0.34))
+	draw_string(ThemeDB.fallback_font, Vector2(300, 40), "LIVES x%d" % lives,
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color.WHITE)
 
 func _bar(rect: Rect2, ratio: float, fill: Color, back: Color) -> void:
-	draw_rect(rect, Color("090812"), true)
-	draw_rect(rect.grow(-1), back, true)
-	var inner := Rect2(rect.position + Vector2(2, 2), Vector2((rect.size.x - 4) * ratio, rect.size.y - 4))
-	draw_rect(inner, fill, true)
-	draw_rect(rect, Color("d7b66f"), false, 1.0)
+	draw_rect(rect, Color(0.04, 0.03, 0.07), true)
+	var inner := Rect2(
+		rect.position + Vector2(1, 1),
+		Vector2((rect.size.x - 2) * ratio, rect.size.y - 2)
+	)
+	if inner.size.x > 0.0:
+		draw_rect(inner, fill, true)
+	draw_rect(Rect2(rect.position + Vector2(1, 1), rect.size - Vector2(2, 2)), back, false, 1.0)
+	draw_rect(rect, Color(0.84, 0.71, 0.44), false, 1.0)

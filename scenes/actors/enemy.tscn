@@ -1,42 +1,29 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/enemy.gd" id="1_enemy"]
-[ext_resource type="SpriteFrames" path="res://resources/exec_frames.tres" id="2_frames"]
+[ext_resource type="SpriteFrames" path="res://resources/guard_frames.tres" id="2_frames"]
 
-[sub_resource type="RectangleShape2D" id="EnemyBodyShape"]
-size = Vector2(28, 14)
-
-[sub_resource type="RectangleShape2D" id="EnemyHurtShape"]
-size = Vector2(34, 56)
+[sub_resource type="CapsuleShape2D" id="body"]
+radius = 16.0
+height = 40.0
 
 [node name="Enemy" type="CharacterBody2D"]
 collision_layer = 4
-collision_mask = 1 | 2 | 4
+collision_mask = 1
 script = ExtResource("1_enemy")
 
-[node name="Body" type="CollisionShape2D" parent="."]
-position = Vector2(0, -7)
-shape = SubResource("EnemyBodyShape")
-
-[node name="Hurtbox" type="Area2D" parent="."]
-collision_layer = 0
-collision_mask = 16
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
-position = Vector2(0, -48)
-shape = SubResource("EnemyHurtShape")
-
-[node name="Shadow" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(-18, 2, 18, 2, 12, 5, -12, 5)
-color = Color(0.03, 0.02, 0.06, 0.42)
-
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
-offset = Vector2(0, -114)
+position = Vector2(0, -110)
 scale = Vector2(0.5, 0.5)
 sprite_frames = ExtResource("2_frames")
 animation = &"idle"
+autoplay = &"idle"
 
-[node name="DirectionMarker" type="Polygon2D" parent="."]
-visible = false
-polygon = PackedVector2Array(-19, -43, -29, -39, -19, -35)
-color = Color(1, 1, 1, 0.5)
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -20)
+shape = SubResource("body")
+
+[node name="Shadow" type="Polygon2D" parent="."]
+z_index = -1
+polygon = PackedVector2Array(-22, 2, 22, 2, 15, 7, -15, 7)
+color = Color(0.02, 0.02, 0.05, 0.45)

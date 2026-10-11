@@ -1,22 +1,21 @@
 [gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/game.gd" id="1_game"]
-[ext_resource type="Script" path="res://scripts/stage_01_hq.gd" id="2_stage"]
-[ext_resource type="Script" path="res://scripts/hud.gd" id="3_hud"]
-[ext_resource type="Texture2D" path="res://art/backgrounds/stage1_hq.png" id="4_bg"]
+[ext_resource type="Script" path="res://scripts/stage.gd" id="2_stage"]
+[ext_resource type="Texture2D" path="res://art/backgrounds/stage1_hq.png" id="3_bg"]
+[ext_resource type="Script" path="res://scripts/hud.gd" id="4_hud"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_game")
 
-[node name="Stage01HQ" type="Node2D" parent="."]
+[node name="Stage" type="Node2D" parent="."]
 script = ExtResource("2_stage")
 
-[node name="Background" type="Sprite2D" parent="Stage01HQ"]
-texture = ExtResource("4_bg")
-position = Vector2(1080, -36)
-scale = Vector2(1.08, 1.08)
+[node name="Background" type="Sprite2D" parent="Stage"]
+texture = ExtResource("3_bg")
+position = Vector2(1000, 270)
 
-[node name="Camera2D" type="Camera2D" parent="Stage01HQ"]
+[node name="Camera2D" type="Camera2D" parent="Stage"]
 position = Vector2(240, 135)
 position_smoothing_enabled = true
 position_smoothing_speed = 6.0
@@ -24,11 +23,10 @@ position_smoothing_speed = 6.0
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
 [node name="HUD" type="Control" parent="CanvasLayer"]
-layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-script = ExtResource("3_hud")
+script = ExtResource("4_hud")
