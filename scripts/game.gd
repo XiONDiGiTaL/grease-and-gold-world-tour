@@ -6,9 +6,11 @@ var player: CharacterBody2D
 
 func _ready() -> void:
     player = PLAYER_SCENE.instantiate()
-    player.position = Vector2(115, 225)
+    player.position = Vector2(118, 237)
     $Stage01HQ.add_child(player)
     $Stage01HQ.set_player(player)
+    $CanvasLayer/HUD.set_player(player)
+    $CanvasLayer/HUD.set_stage($Stage01HQ)
 
 func _process(_delta: float) -> void:
     if player == null:
