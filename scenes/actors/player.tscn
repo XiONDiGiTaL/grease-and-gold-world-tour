@@ -1,6 +1,7 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/player.gd" id="1_player"]
+[ext_resource type="SpriteFrames" path="res://resources/ricky_frames.tres" id="2_frames"]
 
 [sub_resource type="RectangleShape2D" id="BodyShape"]
 size = Vector2(28, 14)
@@ -9,9 +10,9 @@ size = Vector2(28, 14)
 size = Vector2(30, 50)
 
 [node name="Player" type="CharacterBody2D"]
-script = ExtResource("1_player")
 collision_layer = 2
 collision_mask = 1 | 4
+script = ExtResource("1_player")
 
 [node name="Body" type="CollisionShape2D" parent="."]
 position = Vector2(0, -7)
@@ -29,58 +30,13 @@ shape = SubResource("HurtShape")
 polygon = PackedVector2Array(-19, 2, 19, 2, 13, 6, -13, 6)
 color = Color(0.03, 0.02, 0.06, 0.45)
 
-[node name="Legs" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(-12, -2, -10, -34, -1, -34, 2, -7, 10, -7, 13, -2, 4, 0, 0, -21, -4, 0)
-color = Color(0.16, 0.15, 0.28, 1)
-
-[node name="Shoes" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(-14, -2, -2, -2, -1, 1, -16, 1, 5, -7, 16, -7, 17, -3, 4, -3)
-color = Color(0.35, 0.18, 0.10, 1)
-
-[node name="Jacket" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(-20, -32, -17, -65, -9, -73, 10, -73, 19, -62, 18, -32, 10, -27, -12, -27)
-color = Color(0.69, 0.49, 0.29, 1)
-
-[node name="Collar" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(-12, -68, -4, -59, 0, -66, 6, -59, 14, -68, 8, -72, -7, -72)
-color = Color(0.91, 0.83, 0.62, 1)
-
-[node name="Shirt" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(-6, -60, 6, -60, 9, -31, -8, -31)
-color = Color(0.11, 0.11, 0.15, 1)
-
-[node name="Head" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(-8, -76, -6, -90, 6, -92, 13, -85, 11, -75, 5, -70, -4, -71)
-color = Color(0.76, 0.49, 0.34, 1)
-
-[node name="Hair" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(-9, -83, -7, -94, 8, -97, 14, -89, 8, -87, 2, -91, -4, -89)
-color = Color(0.08, 0.07, 0.10, 1)
-
-[node name="Aviators" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(-4, -84, 4, -84, 5, -80, -3, -80, 6, -84, 12, -82, 11, -78, 6, -79)
-color = Color(0.61, 0.34, 0.14, 1)
-
-[node name="Moustache" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(1, -75, 8, -75, 11, -72, 7, -71, 4, -73, -1, -71, -3, -73)
-color = Color(0.10, 0.06, 0.09, 1)
-
-[node name="Pendant" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(-2, -54, 3, -54, 3, -49, -2, -49)
-color = Color(0.94, 0.69, 0.19, 1)
-
-[node name="FlagPole" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(17, -69, 20, -69, 20, -23, 17, -23)
-color = Color(0.54, 0.32, 0.16, 1)
-
-[node name="TurkishFlag" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(20, -68, 44, -63, 40, -49, 20, -51)
-color = Color(0.80, 0.10, 0.16, 1)
-
-[node name="Crescent" type="Polygon2D" parent="TurkishFlag"]
-polygon = PackedVector2Array(8, 8, 14, 10, 11, 14, 15, 16, 9, 17, 5, 13)
-color = Color(1, 0.95, 0.84, 1)
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+offset = Vector2(0, -100)
+scale = Vector2(0.5, 0.5)
+sprite_frames = ExtResource("2_frames")
+animation = &"idle"
 
 [node name="DirectionMarker" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(21, -43, 31, -39, 21, -35)
-color = Color(1, 0.82, 0.28, 1)
+visible = false
+polygon = PackedVector2Array(-8, -50, -14, -47, -8, -44)
+color = Color(1, 1, 1, 0.5)
