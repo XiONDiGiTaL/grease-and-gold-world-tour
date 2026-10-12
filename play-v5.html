@@ -47,7 +47,7 @@
 // Logical res 480x270, fixed 60Hz timestep.
 
 const W = 480, H = 270;
-const YMIN = 212, YMAX = 252;
+const YMIN = 228, YMAX = 252;  // feet stay on the street asphalt
 
 const CHARS = [
   {key:'ricky', name:'RICKY B', hp:100, atk:12, spd:2.3},
@@ -148,7 +148,7 @@ let player=null, foes=[], props=[], fx=[];
 let wave=0, score=0, lives=2, camX=0, msg='', msgT=0, shake=0, freeze=0, spawnT=0;
 
 function mkFighter(c) {
-  return {key:c.key, name:c.name, x:100, y:232, z:0, vz:0, vx:0, vy:0, face:1,
+  return {key:c.key, name:c.name, x:100, y:240, z:0, vz:0, vx:0, vy:0, face:1,
     hp:c.hp, maxhp:c.hp, hype:0, spd:c.spd, atk:c.atk,
     st:'idle', t:0, atkT:0, atkN:0, atkBuf:false, specAtk:false, inv:0};
 }
@@ -533,11 +533,22 @@ function drawFight() {
       ctx.beginPath(); ctx.arc(ex,ey,3.5,0,7); ctx.fill();
     }
     else if(e.kind==='kebab'){
-      const kb=Math.sin(gt*0.15+e.x)*3, ky=ey-8+kb;
-      ctx.fillStyle='rgba(255,220,80,0.25)';ctx.beginPath();ctx.arc(ex,ky,10,0,7);ctx.fill();
-      ctx.strokeStyle='#8a5f33';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(ex-10,ky+6);ctx.lineTo(ex+10,ky-6);ctx.stroke();
-      ctx.fillStyle='#a64d1f';ctx.beginPath();ctx.arc(ex-4,ky,4.5,0,7);ctx.fill();ctx.beginPath();ctx.arc(ex+2,ky-2,4.5,0,7);ctx.fill();
-      ctx.fillStyle='#d98c40';ctx.beginPath();ctx.arc(ex-4,ky,2,0,7);ctx.fill();ctx.beginPath();ctx.arc(ex+2,ky-2,2,0,7);ctx.fill();
+      // 16-bit pixel-art kebab skewer, resting on the ground
+      const gl=0.18+Math.sin(gt*0.12+e.x)*0.06;
+      ctx.fillStyle=`rgba(255,200,60,${gl})`;
+      ctx.beginPath(); ctx.arc(ex,ey-8,13,0,7); ctx.fill();
+      // stick
+      ctx.fillStyle='#7a4d1e';
+      ctx.fillRect(ex-9,ey-18,3,18); ctx.fillRect(ex-7,ey-18,1,18);
+      // meat chunks (chunky pixels)
+      const meat=['#8f3415','#b54d1f','#8f3415','#6e2810'];
+      for(let mi=0;mi<4;mi++){
+        const mx=ex-11+mi*2, my=ey-16+mi*4;
+        ctx.fillStyle=meat[mi]; ctx.fillRect(mx,my,8,6);
+        ctx.fillStyle='rgba(255,170,90,0.8)'; ctx.fillRect(mx+1,my+1,3,2);
+      }
+      // metal tip
+      ctx.fillStyle='#d8d8d8'; ctx.fillRect(ex-9,ey-21,3,4);
     }
     else if(e.kind==='spec'){ctx.fillStyle='#c9a227';ctx.textAlign='center';ctx.font='14px monospace';ctx.fillText(e.txt,ex,ey-e.t);}
     else if(e.kind==='hypeget'){ctx.fillStyle='#c9a227';ctx.textAlign='center';ctx.font='10px monospace';ctx.fillText(e.txt,ex,ey-e.t*1.5);}
