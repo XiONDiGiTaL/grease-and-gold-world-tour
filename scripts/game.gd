@@ -8,40 +8,64 @@ const BUILD_TAG := "build 2026-10-12f-godot"
 
 # --- textures (2x exports of the cleaned sprite set) ---
 const TEX := {
-	"ricky": [
-		preload("res://sprites/ricky_idle.png"),
-		preload("res://sprites/ricky_walk.png"),
-		preload("res://sprites/ricky_attack.png"),
-		preload("res://sprites/ricky_hurt.png"),
-	],
-	"vv": [
-		preload("res://sprites/vv_idle.png"),
-		preload("res://sprites/vv_walk.png"),
-		preload("res://sprites/vv_attack.png"),
-		preload("res://sprites/vv_hurt.png"),
-	],
-	"johnny": [
-		preload("res://sprites/johnny_idle.png"),
-		preload("res://sprites/johnny_walk.png"),
-		preload("res://sprites/johnny_attack.png"),
-		preload("res://sprites/johnny_hurt.png"),
-	],
-	"guard": [
-		preload("res://sprites/guard_idle.png"),
-		preload("res://sprites/guard_attack.png"),
-	],
-	"exec": [
-		preload("res://sprites/exec_idle.png"),
-		preload("res://sprites/exec_attack.png"),
-	],
-	"ledger": [
-		preload("res://sprites/ledger_idle.png"),
-		preload("res://sprites/ledger_attack.png"),
-	],
-	"heavy": [
-		preload("res://sprites/heavy_idle.png"),
-		preload("res://sprites/heavy_attack.png"),
-	],
+	"ricky": {
+		"idle": [preload("res://sprites/ricky_idle_1.png"), preload("res://sprites/ricky_idle_2.png")],
+		"walk": [preload("res://sprites/ricky_walk_1.png"), preload("res://sprites/ricky_walk_2.png"), preload("res://sprites/ricky_walk_3.png"), preload("res://sprites/ricky_walk_4.png")],
+		"atk": [preload("res://sprites/ricky_atk_1.png"), preload("res://sprites/ricky_atk_2.png"), preload("res://sprites/ricky_atk_3.png"), preload("res://sprites/ricky_atk_4.png")],
+		"jump": [preload("res://sprites/ricky_jump_1.png"), preload("res://sprites/ricky_jump_2.png")],
+		"hurt": [preload("res://sprites/ricky_hurt_1.png"), preload("res://sprites/ricky_hurt_2.png")],
+		"down": preload("res://sprites/ricky_down.png"),
+		"victory": preload("res://sprites/ricky_victory.png"),
+	},
+	"vv": {
+		"idle": [preload("res://sprites/vv_idle_1.png"), preload("res://sprites/vv_idle_2.png")],
+		"walk": [preload("res://sprites/vv_walk_1.png"), preload("res://sprites/vv_walk_2.png"), preload("res://sprites/vv_walk_3.png"), preload("res://sprites/vv_walk_4.png")],
+		"atk": [preload("res://sprites/vv_atk_1.png"), preload("res://sprites/vv_atk_2.png"), preload("res://sprites/vv_atk_3.png"), preload("res://sprites/vv_atk_4.png")],
+		"jump": [preload("res://sprites/vv_jump_1.png"), preload("res://sprites/vv_jump_2.png")],
+		"hurt": [preload("res://sprites/vv_hurt_1.png"), preload("res://sprites/vv_hurt_2.png")],
+		"down": preload("res://sprites/vv_down.png"),
+		"victory": preload("res://sprites/vv_victory.png"),
+	},
+	"johnny": {
+		"idle": [preload("res://sprites/johnny_idle_1.png"), preload("res://sprites/johnny_idle_2.png")],
+		"walk": [preload("res://sprites/johnny_walk_1.png"), preload("res://sprites/johnny_walk_2.png"), preload("res://sprites/johnny_walk_3.png"), preload("res://sprites/johnny_walk_4.png")],
+		"atk": [preload("res://sprites/johnny_atk_1.png"), preload("res://sprites/johnny_atk_2.png"), preload("res://sprites/johnny_atk_3.png"), preload("res://sprites/johnny_atk_4.png")],
+		"jump": [preload("res://sprites/johnny_jump_1.png"), preload("res://sprites/johnny_jump_2.png")],
+		"hurt": [preload("res://sprites/johnny_hurt_1.png"), preload("res://sprites/johnny_hurt_2.png")],
+		"down": preload("res://sprites/johnny_down.png"),
+		"victory": preload("res://sprites/johnny_victory.png"),
+	},
+	"guard": {
+		"idle": preload("res://sprites/guard_idle.png"),
+		"walk": preload("res://sprites/guard_walk.png"),
+		"attack": preload("res://sprites/guard_attack.png"),
+		"attack2": preload("res://sprites/guard_attack2.png"),
+		"hurt": preload("res://sprites/guard_hurt.png"),
+		"down": preload("res://sprites/guard_down.png"),
+	},
+	"exec": {
+		"idle": preload("res://sprites/exec_idle.png"),
+		"walk": preload("res://sprites/exec_walk.png"),
+		"attack": preload("res://sprites/exec_attack.png"),
+		"attack2": preload("res://sprites/exec_attack2.png"),
+		"hurt": preload("res://sprites/exec_hurt.png"),
+		"down": preload("res://sprites/exec_down.png"),
+	},
+	"ledger": {
+		"idle": preload("res://sprites/ledger_idle.png"),
+		"walk": preload("res://sprites/ledger_walk.png"),
+		"attack": preload("res://sprites/ledger_attack.png"),
+		"attack2": preload("res://sprites/ledger_attack2.png"),
+		"hurt": preload("res://sprites/ledger_hurt.png"),
+		"down": preload("res://sprites/ledger_down.png"),
+	},
+	"heavy": {
+		"idle": preload("res://sprites/heavy_idle.png"),
+		"walk": preload("res://sprites/heavy_walk.png"),
+		"attack": preload("res://sprites/heavy_attack.png"),
+		"attack2": preload("res://sprites/heavy_attack2.png"),
+		"down": preload("res://sprites/heavy_down.png"),
+	},
 }
 const BG_TEX := preload("res://sprites/bg_stage1.png")
 
@@ -541,13 +565,50 @@ func _update_foe(f: Foe) -> void:
 
 
 # ---------------------------------------------------------------- drawing ---
-func _draw_sprite(key: String, frame: int, pos: Vector2, face: int, h: float, rock: float, alpha: float) -> void:
-	var tex: Texture2D = TEX[key][frame]
+func _draw_sprite_tex(tex: Texture2D, pos: Vector2, face: int, h: float, rock: float, alpha: float) -> void:
 	var s: float = h / tex.get_height()
 	draw_set_transform(pos, rock, Vector2(face * s, s))
 	var mod := Color(1, 1, 1, alpha)
 	draw_texture(tex, Vector2(-tex.get_width() / 2.0, -tex.get_height()), mod)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+## Returns the right animation texture for an actor in its current state.
+func _pick_frame(a, isP: bool) -> Texture2D:
+	var set: Dictionary = TEX[a.key] if isP else TEX[a.type]
+	if isP:
+		match a.st:
+			"idle":
+				return set["idle"][int(gt / 30) % 2]
+			"walk":
+				return set["walk"][int(gt / 8) % 4]
+			"attack":
+				if a.specAtk:
+					return set["atk"][3]
+				# cycle the three combo hits across the swing
+				return set["atk"][clampi(int(a.atkT / 6), 0, 2)]
+			"hurt":
+				return set["hurt"][0]
+			"down", "launched", "ko":
+				return set["down"]
+			_:
+				# airborne or other: pick jump frame by vertical velocity
+				if a.z > 1.0:
+					return set["jump"][0] if a.vz > 0.0 else set["jump"][1]
+				return set["idle"][0]
+	else:
+		match a.st:
+			"walk":
+				return set["walk"] if int(gt / 10) % 2 == 0 else set["idle"]
+			"attack", "tele", "charge":
+				return set["attack2"] if a.atkCount % 2 == 1 else set["attack"]
+			"hurt":
+				return set.get("hurt", set["idle"])
+			"down", "launched", "ko":
+				return set["down"]
+			_:
+				return set["idle"]
+	return set["idle"] if not isP else set["idle"][0]
 
 
 func _draw_shadow(x: float, y: float) -> void:
@@ -557,27 +618,11 @@ func _draw_shadow(x: float, y: float) -> void:
 
 
 func _draw_background() -> void:
-	# bg file is 2x (2000x540); draw at 0.5 so it lands at 1000x270 like the JS build
+	# bg file is 2x (2000x540); draw at 0.5 so it lands at 1000x270 like the JS build.
+	# The GREASE & GOLD sign and SOHBET billboard are painted into the backdrop.
 	draw_set_transform(Vector2(-camX, 0), 0.0, Vector2(0.5, 0.5))
 	draw_texture(BG_TEX, Vector2.ZERO)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	# gold GREASE & GOLD sign (same coords as the JS build)
-	var sx: float = 150.0 - camX
-	if sx > -220.0 and sx < W + 20.0:
-		draw_rect(Rect2(sx, 42, 200, 30), Color(0.79, 0.64, 0.15))
-		draw_rect(Rect2(sx + 4, 46, 192, 22), Color(0.10, 0.06, 0.0))
-		_draw_text("GREASE & GOLD", Vector2(sx + 100, 61), 11, Color(0.79, 0.64, 0.15), HORIZONTAL_ALIGNMENT_CENTER)
-	# purple SOHBET billboard (same coords as the JS build)
-	var bx: float = 640.0 - camX
-	if bx > -180.0 and bx < W + 20.0:
-		draw_rect(Rect2(bx, 46, 170, 64), Color(0.36, 0.16, 0.53))
-		draw_rect(Rect2(bx, 46, 170, 6), Color(0.48, 0.25, 0.69))
-		draw_circle(Vector2(bx + 55, 72), 14, Color.WHITE)
-		draw_circle(Vector2(bx + 75, 72), 14, Color(1, 0, 1))
-		draw_circle(Vector2(bx + 55, 72), 9, Color.WHITE)
-		draw_rect(Rect2(bx + 48, 82, 6, 8), Color.WHITE)
-		draw_rect(Rect2(bx + 76, 82, 6, 8), Color(1, 0, 1))
-		_draw_text("SOHBET", Vector2(bx + 118, 80), 13, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 
 
 func _draw_text(txt: String, pos: Vector2, size: int, color: Color, align: HorizontalAlignment) -> void:
@@ -613,7 +658,7 @@ func _draw() -> void:
 				draw_rect(Rect2(x - 60, 55, 120, 150), Color(0.79, 0.64, 0.15), false, 3.0)
 			# idle breathing bob
 			var bob: float = sin(gt * 0.08 + i * 2.1) * 2.0
-			_draw_sprite(c["key"], 0, Vector2(x, 185 + bob), 1, 84.0, 0.0, 1.0)
+			_draw_sprite_tex(TEX[c["key"]]["idle"][0], Vector2(x, 185 + bob), 1, 84.0, 0.0, 1.0)
 			_draw_text(c["name"], Vector2(x, 215), 10, Color(0.79, 0.64, 0.15) if i == sel else Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 			# HP / ATK stat bars
 			var bw := 90.0
@@ -657,14 +702,7 @@ func _draw_fight() -> void:
 
 	for a in actors:
 		var isP: bool = (a == p)
-		var key: String = a.key if isP else a.type
-		var frame := 0
-		if a.st == "walk":
-			frame = (0 if int(gt / 12) % 2 == 0 else 1) if isP else 0
-		elif a.st == "attack" or a.st == "tele" or a.st == "charge":
-			frame = 2 if isP else 1
-		elif a.st == "hurt" or a.st == "down" or a.st == "launched" or a.st == "ko":
-			frame = 3 if isP else 0
+		var tex: Texture2D = _pick_frame(a, isP)
 
 		_draw_shadow(a.x - camX, a.y)
 		var h: float = 84.0 if isP else a.h
@@ -689,7 +727,7 @@ func _draw_fight() -> void:
 			alpha = 0.5
 		if a.st == "tele" and int(gt / 4) % 2 == 0:
 			alpha = 0.7
-		_draw_sprite(key, frame, Vector2(a.x - camX + lungeX, a.y - a.z + bobY), a.face, h, rock, alpha)
+		_draw_sprite_tex(tex, Vector2(a.x - camX + lungeX, a.y - a.z + bobY), a.face, h, rock, alpha)
 
 		if not isP and a.hp > 0.0:
 			var bw := 44.0
@@ -726,7 +764,7 @@ func _draw_fight() -> void:
 	# HUD
 	draw_rect(Rect2(0, 0, W, 28), Color.BLACK)
 	draw_rect(Rect2(0, 28, W, 1), Color(0.79, 0.64, 0.15, 0.5))
-	_draw_sprite(p.key, 0, Vector2(20, 26), 1, 24.0, 0.0, 1.0)
+	_draw_sprite_tex(TEX[p.key]["idle"][0], Vector2(20, 26), 1, 24.0, 0.0, 1.0)
 	_draw_text(p.char_name, Vector2(36, 12), 10, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT)
 	# HP bar with border
 	draw_rect(Rect2(35, 14, 122, 10), Color(0.1, 0.1, 0.1))
