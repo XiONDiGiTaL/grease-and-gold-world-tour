@@ -1,9 +1,0 @@
-.godot/
-.import/
-*.tmp
-*.bak
-*.swp
-.DS_Store
-export/
-
-*.import

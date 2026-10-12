@@ -1,22 +1,9 @@
-# Grease & Gold: World Tour
+# GREASE & GOLD: WORLD TOUR
 
-An original, 16-bit-inspired side-scrolling beat 'em up built in Godot 4.
+16-bit-style side-scrolling beat 'em up starring Ricky B, Johnny $alami and V.V.
 
-## Current milestone
+**Play it:** open `index.html` in any browser (or enable GitHub Pages).
 
-Stage 1 — Grease & Gold Records Headquarters foundation:
-
-- Ricky B movement, facing, collision and placeholder combat
-- Walkable street bounds and solid environmental blockers
-- Enemy body separation, combat-gate scaffolding and HUD scaffolding
-- Data files for the Executive, Corporate Heavy and Security Guard
-- Pixel-art import and animation requirements
-
-## Run locally
-
-1. Install Godot 4.3 or later.
-2. Clone this repository with GitHub Desktop.
-3. Import `project.godot` in Godot.
-4. Open `scenes/main.tscn` and press **F6**, or press **F5** to run the project.
-
-This foundation intentionally uses placeholder visuals. Finished production sprites must be authored as clean PNG animation assets; generated/cropped images are art-direction references only.
+- Arrows/WASD move - Z attack - X special (30 HYPE) - Space jump - Enter confirm - Esc pause
+- 3 waves through G&G Headquarters: guards, executives, the Corporate Heavy, and Ledger
+- By Player529 & XiON

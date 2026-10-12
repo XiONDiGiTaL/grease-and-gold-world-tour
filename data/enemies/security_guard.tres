@@ -1,8 +1,0 @@
-[gd_resource type="Resource" format=3]
-
-[resource]
-resource_name = "Security Guard"
-metadata/max_health = 105
-metadata/walk_speed = 98.0
-metadata/body_mass = 1.2
-metadata/behavior = "Baton guard with defensive posture"
