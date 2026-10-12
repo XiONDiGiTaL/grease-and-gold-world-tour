@@ -269,7 +269,13 @@ function updateFight() {
   }
   if (spawnT>0) { spawnT--; if(spawnT===0) spawnWave(); }
   if (msgT>0) msgT--;
-  for (const e of fx) e.t++;
+  // update + expire effects (kebabs persist until picked up)
+  const FX_LIFE = {slash:10, hit:8, spec:30, hypeget:40, debris:18, kebab:1e9};
+  for (let i=fx.length-1;i>=0;i--) {
+    const e=fx[i];
+    e.t++;
+    if (e.t > (FX_LIFE[e.kind]||20)) fx.splice(i,1);
+  }
   camX=Math.max(0,Math.min(520,player.x-200));
 }
 
@@ -453,7 +459,12 @@ function drawFight() {
   for (const e of fx) {
     const ex=e.x-camX, ey=e.y;
     if(ex<-30||ex>W+30) continue;
-    if(e.kind==='slash'){ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(ex,ey,16+e.t*2,0,7);ctx.stroke();}
+    if(e.kind==='slash'){
+      // quick small swipe arc that fades — no more giant circles
+      const a=Math.max(0,1-e.t/10);
+      ctx.strokeStyle=`rgba(255,255,255,${a})`; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.arc(ex,ey,14+e.t*1.2,0,7); ctx.stroke();
+    }
     else if(e.kind==='hit'){ctx.fillStyle='#ff0';ctx.fillRect(ex-4,ey-4,8,8);}
     else if(e.kind==='kebab'){
       const kb=Math.sin(gt*0.15+e.x)*3, ky=ey-8+kb;
