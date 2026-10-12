@@ -566,7 +566,7 @@ func _draw_background() -> void:
 	if sx > -220.0 and sx < W + 20.0:
 		draw_rect(Rect2(sx, 42, 200, 30), Color(0.79, 0.64, 0.15))
 		draw_rect(Rect2(sx + 4, 46, 192, 22), Color(0.10, 0.06, 0.0))
-		_draw_text("GREASE & GOLD", Vector2(sx + 100, 61), 11, Color(0.79, 0.64, 0.15), true)
+		_draw_text("GREASE & GOLD", Vector2(sx + 100, 61), 11, Color(0.79, 0.64, 0.15), HORIZONTAL_ALIGNMENT_CENTER)
 	# purple SOHBET billboard (same coords as the JS build)
 	var bx: float = 640.0 - camX
 	if bx > -180.0 and bx < W + 20.0:
@@ -577,12 +577,11 @@ func _draw_background() -> void:
 		draw_circle(Vector2(bx + 55, 72), 9, Color.WHITE)
 		draw_rect(Rect2(bx + 48, 82, 6, 8), Color.WHITE)
 		draw_rect(Rect2(bx + 76, 82, 6, 8), Color(1, 0, 1))
-		_draw_text("SOHBET", Vector2(bx + 118, 80), 13, Color.WHITE, true)
+		_draw_text("SOHBET", Vector2(bx + 118, 80), 13, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 
 
-func _draw_text(txt: String, pos: Vector2, size: int, color: Color, centered: bool) -> void:
+func _draw_text(txt: String, pos: Vector2, size: int, color: Color, align: HorizontalAlignment) -> void:
 	var font: Font = ThemeDB.fallback_font
-	var align := HORIZONTAL_ALIGNMENT_CENTER if centered else HORIZONTAL_ALIGNMENT_LEFT
 	# draw_string positions by baseline; nudge up so pos ≈ visual center
 	draw_string(font, pos + Vector2(0, size * 0.35), txt, align, -1.0, size, color)
 
@@ -592,46 +591,57 @@ func _draw() -> void:
 	if state == "title":
 		_draw_background()
 		draw_rect(Rect2(0, 0, W, H), Color(0, 0, 0, 0.55))
-		_draw_text("GREASE & GOLD", Vector2(W / 2, 100), 30, Color(0.79, 0.64, 0.15), true)
-		_draw_text("WORLD TOUR", Vector2(W / 2, 132), 30, Color(0.79, 0.64, 0.15), true)
-		_draw_text("By Player529 & XiON", Vector2(W / 2, 160), 12, Color.WHITE, true)
+		_draw_text("GREASE & GOLD", Vector2(W / 2, 100), 30, Color(0.79, 0.64, 0.15), HORIZONTAL_ALIGNMENT_CENTER)
+		_draw_text("WORLD TOUR", Vector2(W / 2, 132), 30, Color(0.79, 0.64, 0.15), HORIZONTAL_ALIGNMENT_CENTER)
+		_draw_text("By Player529 & XiØN", Vector2(W / 2, 160), 12, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+		# gold divider rules
+		draw_rect(Rect2(W / 2 - 110, 170, 220, 2), Color(0.79, 0.64, 0.15, 0.6))
+		draw_rect(Rect2(W / 2 - 110, 86, 220, 2), Color(0.79, 0.64, 0.15, 0.6))
 		if int(gt / 30) % 2 == 0:
-			_draw_text("Press ENTER or TAP", Vector2(W / 2, 205), 12, Color(0.79, 0.64, 0.15), true)
-		_draw_text("Arrows/WASD move - Z attack - X special - Space jump", Vector2(W / 2, 240), 10, Color(0.53, 0.53, 0.53), true)
-		_draw_text(BUILD_TAG, Vector2(W / 2, 258), 9, Color(0.27, 0.27, 0.27), true)
+			_draw_text("Press ENTER or TAP", Vector2(W / 2, 205), 12, Color(0.79, 0.64, 0.15), HORIZONTAL_ALIGNMENT_CENTER)
+		_draw_text("Arrows/WASD move - Z attack - X special", Vector2(W / 2, 236), 10, Color(0.53, 0.53, 0.53), HORIZONTAL_ALIGNMENT_CENTER)
+		_draw_text("Space jump - Enter confirm - Esc pause", Vector2(W / 2, 248), 10, Color(0.53, 0.53, 0.53), HORIZONTAL_ALIGNMENT_CENTER)
+		_draw_text(BUILD_TAG, Vector2(W / 2, 262), 9, Color(0.27, 0.27, 0.27), HORIZONTAL_ALIGNMENT_CENTER)
 	elif state == "select":
 		_draw_background()
 		draw_rect(Rect2(0, 0, W, H), Color(0, 0, 0, 0.55))
-		_draw_text("SELECT FIGHTER", Vector2(W / 2, 40), 16, Color.WHITE, true)
+		_draw_text("SELECT FIGHTER", Vector2(W / 2, 40), 16, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 		for i in CHARS.size():
 			var c: Dictionary = CHARS[i]
 			var x: float = 90.0 + i * 150.0
 			if i == sel:
 				draw_rect(Rect2(x - 60, 55, 120, 150), Color(0.79, 0.64, 0.15), false, 3.0)
-			_draw_sprite(c["key"], 0, Vector2(x, 185), 1, 84.0, 0.0, 1.0)
-			_draw_text(c["name"], Vector2(x, 215), 10, Color(0.79, 0.64, 0.15) if i == sel else Color.WHITE, true)
-			_draw_text("HP %d ATK %d" % [c["hp"], c["atk"]], Vector2(x, 228), 10, Color(0.53, 0.53, 0.53), true)
-		_draw_text("Arrows / 1-2-3 + Enter", Vector2(W / 2, 255), 10, Color(0.53, 0.53, 0.53), true)
+			# idle breathing bob
+			var bob: float = sin(gt * 0.08 + i * 2.1) * 2.0
+			_draw_sprite(c["key"], 0, Vector2(x, 185 + bob), 1, 84.0, 0.0, 1.0)
+			_draw_text(c["name"], Vector2(x, 215), 10, Color(0.79, 0.64, 0.15) if i == sel else Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+			# HP / ATK stat bars
+			var bw := 90.0
+			draw_rect(Rect2(x - bw / 2, 222, bw, 4), Color(0.2, 0.2, 0.2))
+			draw_rect(Rect2(x - bw / 2, 222, bw * (c["hp"] / 120.0), 4), Color(0, 0.8, 0))
+			draw_rect(Rect2(x - bw / 2, 229, bw, 4), Color(0.2, 0.2, 0.2))
+			draw_rect(Rect2(x - bw / 2, 229, bw * (c["atk"] / 16.0), 4), Color(1.0, 0.6, 0.1))
+		_draw_text("Arrows / 1-2-3 + Enter", Vector2(W / 2, 255), 10, Color(0.53, 0.53, 0.53), HORIZONTAL_ALIGNMENT_CENTER)
 	elif state == "fight" or state == "pause":
 		_draw_background()
 		_draw_fight()
 		if state == "pause":
 			draw_rect(Rect2(0, 0, W, H), Color(0, 0, 0, 0.7))
-			_draw_text("PAUSED", Vector2(W / 2, 130), 20, Color.WHITE, true)
-			_draw_text("ESC to resume", Vector2(W / 2, 155), 11, Color.WHITE, true)
+			_draw_text("PAUSED", Vector2(W / 2, 130), 20, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+			_draw_text("ESC to resume", Vector2(W / 2, 155), 11, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 	elif state == "clear":
 		_draw_background()
 		draw_rect(Rect2(0, 0, W, H), Color(0, 0, 0, 0.6))
-		_draw_text("STAGE CLEAR!", Vector2(W / 2, 120), 24, Color(0, 1, 0), true)
-		_draw_text("Score: %d" % score, Vector2(W / 2, 150), 14, Color.WHITE, true)
+		_draw_text("STAGE CLEAR!", Vector2(W / 2, 120), 24, Color(0, 1, 0), HORIZONTAL_ALIGNMENT_CENTER)
+		_draw_text("Score: %d" % score, Vector2(W / 2, 150), 14, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 		if int(gt / 30) % 2 == 0:
-			_draw_text("Press ENTER", Vector2(W / 2, 185), 14, Color.WHITE, true)
+			_draw_text("Press ENTER", Vector2(W / 2, 185), 14, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 	elif state == "over":
 		draw_rect(Rect2(0, 0, W, H), Color.BLACK)
-		_draw_text("GAME OVER", Vector2(W / 2, 120), 24, Color(1, 0, 0), true)
-		_draw_text("Score: %d" % score, Vector2(W / 2, 150), 14, Color.WHITE, true)
+		_draw_text("GAME OVER", Vector2(W / 2, 120), 24, Color(1, 0, 0), HORIZONTAL_ALIGNMENT_CENTER)
+		_draw_text("Score: %d" % score, Vector2(W / 2, 150), 14, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 		if int(gt / 30) % 2 == 0:
-			_draw_text("Press ENTER", Vector2(W / 2, 185), 14, Color.WHITE, true)
+			_draw_text("Press ENTER", Vector2(W / 2, 185), 14, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 
 
 func _draw_fight() -> void:
@@ -661,6 +671,9 @@ func _draw_fight() -> void:
 		var bobY := 0.0
 		var lungeX := 0.0
 		var rock := 0.0
+		if a.st == "idle":
+			# subtle breathing
+			bobY = sin(gt * 0.09 + a.x * 0.05) * 1.5
 		if not isP and a.st == "walk":
 			var ph: bool = int(gt / 7) % 2 == 0
 			bobY = 0.0 if ph else -5.0
@@ -696,34 +709,40 @@ func _draw_fight() -> void:
 			"hit":
 				draw_rect(Rect2(ex - 4, ey - 4, 8, 8), Color(1, 1, 0))
 			"launch":
-				_draw_text("SMASH!", Vector2(ex, ey - e["t"] * 2.0), 14, Color(1, 1, 0), true)
+				_draw_text("SMASH!", Vector2(ex, ey - e["t"] * 2.0), 14, Color(1, 1, 0), HORIZONTAL_ALIGNMENT_CENTER)
 			"kebab":
 				draw_rect(Rect2(ex - 8, ey - 4, 16, 8), Color(0.65, 0.16, 0.16))
 				draw_rect(Rect2(ex - 8, ey - 4, 16, 3), Color(0.82, 0.41, 0.12))
 			"spec":
-				_draw_text(e["txt"], Vector2(ex, ey - e["t"]), 14, Color(0.79, 0.64, 0.15), true)
+				_draw_text(e["txt"], Vector2(ex, ey - e["t"]), 14, Color(0.79, 0.64, 0.15), HORIZONTAL_ALIGNMENT_CENTER)
 			"block":
 				draw_rect(Rect2(ex - 12, ey - 8, 24, 16), Color(0.27, 0.67, 1.0), false, 2.0)
-				_draw_text("BLOCK", Vector2(ex, ey - 12.0), 9, Color(0.27, 0.67, 1.0), true)
+				_draw_text("BLOCK", Vector2(ex, ey - 12.0), 9, Color(0.27, 0.67, 1.0), HORIZONTAL_ALIGNMENT_CENTER)
 			"warn":
-				_draw_text("!", Vector2(ex, ey - fmod(e["t"], 8.0)), 16, Color(1, 0, 0), true)
+				_draw_text("!", Vector2(ex, ey - fmod(e["t"], 8.0)), 16, Color(1, 0, 0), HORIZONTAL_ALIGNMENT_CENTER)
 			"slam":
 				draw_arc(Vector2(ex, ey), 20.0 + e["t"] * 3.0, 0.0, 6.0, 16, Color(1, 0.53, 0), 4.0)
 
 	# HUD
 	draw_rect(Rect2(0, 0, W, 28), Color.BLACK)
+	draw_rect(Rect2(0, 28, W, 1), Color(0.79, 0.64, 0.15, 0.5))
 	_draw_sprite(p.key, 0, Vector2(20, 26), 1, 24.0, 0.0, 1.0)
-	_draw_text(p.char_name, Vector2(36, 12), 10, Color.WHITE, false)
+	_draw_text(p.char_name, Vector2(36, 12), 10, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT)
+	# HP bar with border
+	draw_rect(Rect2(35, 14, 122, 10), Color(0.1, 0.1, 0.1))
 	draw_rect(Rect2(36, 15, 120, 8), Color(0.27, 0, 0))
 	draw_rect(Rect2(36, 15, 120.0 * (p.hp / p.maxhp), 8), Color(0, 1, 0) if p.hp > 30.0 else Color(1, 0, 0))
-	draw_rect(Rect2(36, 24, 80, 4), Color(0.13, 0.13, 0))
-	draw_rect(Rect2(36, 24, 80.0 * (p.hype / 100.0), 4), Color(0.79, 0.64, 0.15))
-	_draw_text("WAVE %d/3" % maxi(1, wave), Vector2(W / 2, 18), 10, Color.WHITE, true)
-	_draw_text("SCORE %d" % score, Vector2(W - 10, 12), 10, Color.WHITE, false)
-	_draw_text("LIVES x%d" % lives, Vector2(W - 10, 24), 10, Color.WHITE, false)
+	# HYPE bar with border + label
+	_draw_text("HYPE", Vector2(36, 31), 7, Color(0.79, 0.64, 0.15), HORIZONTAL_ALIGNMENT_LEFT)
+	draw_rect(Rect2(62, 24, 82, 6), Color(0.1, 0.1, 0.1))
+	draw_rect(Rect2(63, 25, 80, 4), Color(0.13, 0.13, 0))
+	draw_rect(Rect2(63, 25, 80.0 * (p.hype / 100.0), 4), Color(0.79, 0.64, 0.15))
+	_draw_text("WAVE %d/3" % maxi(1, wave), Vector2(W / 2, 18), 10, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	_draw_text("SCORE %d" % score, Vector2(W - 10, 12), 10, Color.WHITE, HORIZONTAL_ALIGNMENT_RIGHT)
+	_draw_text("LIVES x%d" % lives, Vector2(W - 10, 24), 10, Color.WHITE, HORIZONTAL_ALIGNMENT_RIGHT)
 
 	if msgT > 0:
-		_draw_text(msg, Vector2(W / 2, 100), 20, Color(0.79, 0.64, 0.15), true)
+		_draw_text(msg, Vector2(W / 2, 100), 20, Color(0.79, 0.64, 0.15), HORIZONTAL_ALIGNMENT_CENTER)
 
 	var boss: Foe = null
 	for f in foes:
@@ -732,4 +751,4 @@ func _draw_fight() -> void:
 	if boss:
 		draw_rect(Rect2(W / 2 - 100, H - 20, 200, 10), Color(0.27, 0, 0))
 		draw_rect(Rect2(W / 2 - 100, H - 20, 200.0 * (boss.hp / boss.maxhp), 10), Color(1, 0, 0))
-		_draw_text("LEDGER", Vector2(W / 2, H - 24), 10, Color.WHITE, true)
+		_draw_text("LEDGER", Vector2(W / 2, H - 24), 10, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
