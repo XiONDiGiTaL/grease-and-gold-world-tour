@@ -68,6 +68,12 @@ const TEX := {
 	},
 }
 const BG_TEX := preload("res://sprites/bg_stage1.png")
+const PROP_TEX := {
+	"barrel": preload("res://sprites/prop_barrel.png"),
+	"barrel_broken": preload("res://sprites/prop_barrel_broken.png"),
+	"crate": preload("res://sprites/prop_crate.png"),
+	"crate_broken": preload("res://sprites/prop_crate_broken.png"),
+}
 
 const CHARS := [
 	{"key": "ricky", "name": "RICKY B", "hp": 100.0, "spd": 2.2, "atk": 12.0, "spec": "FLAG FURY"},
@@ -82,6 +88,7 @@ var sel: int = 0
 var player: Fighter = null
 var foes: Array = []
 var fx: Array = []
+var props: Array = []
 var camX: float = 0.0
 var wave: int = 0
 var shake: float = 0.0
@@ -135,7 +142,7 @@ func _hurt_foe(f: Foe, dmg: float, kx: float, ax: float, launch: bool) -> void:
 		f.vx = kx * 1.5 / sqrt(f.wt)
 		score += 100
 		player.hype = minf(100.0, player.hype + 12.0)
-		if randf() < 0.3:
+		if randf() < 0.5:
 			fx.append({"x": f.x, "y": f.y, "t": 0, "kind": "kebab"})
 
 
@@ -182,8 +189,31 @@ func _do_attack_hit() -> void:
 		var dy: float = absf(f.y - p.y)
 		if dx < 40.0 and dy < 30.0 and sign(f.x - p.x) == p.face:
 			_hurt_foe(f, p.atk + p.atkN * 4.0, p.face * (7.0 if finisher else 4.0), p.x, finisher)
+	# smash props too
+	for pr in props:
+		if pr["broken"]:
+			continue
+		var pdx: float = absf(pr["x"] - hx)
+		var pdy: float = absf(pr["y"] - p.y)
+		if pdx < 40.0 and pdy < 30.0 and sign(pr["x"] - p.x) == p.face:
+			_hit_prop(pr, p.atk)
 	fx.append({"x": hx, "y": p.y - 50.0, "t": 0, "kind": "slash", "face": p.face})
 	p.atkN = (p.atkN + 1) % 3
+
+
+func _hit_prop(pr: Dictionary, dmg: float) -> void:
+	pr["hp"] = float(pr["hp"]) - dmg
+	pr["t"] = 0
+	if float(pr["hp"]) <= 0.0 and not bool(pr["broken"]):
+		pr["broken"] = true
+		# props always drop something: usually a kebab, sometimes hype
+		if randf() < 0.7:
+			fx.append({"x": pr["x"], "y": pr["y"] - 10.0, "t": 0, "kind": "kebab"})
+		else:
+			player.hype = minf(100.0, player.hype + 15.0)
+			fx.append({"x": pr["x"], "y": pr["y"] - 30.0, "t": 0, "kind": "hypeget", "txt": "+HYPE"})
+		fx.append({"x": pr["x"], "y": pr["y"] - 20.0, "t": 0, "kind": "debris"})
+		shake = maxf(shake, 3.0)
 
 
 func _player_special() -> void:
@@ -206,6 +236,11 @@ func _do_special_hit() -> void:
 			continue
 		if absf(f.x - p.x) < 85.0 and absf(f.y - p.y) < 32.0:
 			_hurt_foe(f, 30.0, (1.0 if f.x > p.x else -1.0) * 8.0, p.x, true)
+	for pr in props:
+		if bool(pr["broken"]):
+			continue
+		if absf(pr["x"] - p.x) < 85.0 and absf(pr["y"] - p.y) < 32.0:
+			_hit_prop(pr, 30.0)
 
 
 # ---------------------------------------------------------------- physics ---
@@ -216,7 +251,7 @@ func _phys_foe(f: Foe, wantX: float, wantY: float) -> void:
 	f.x += f.vx
 	f.y += f.vy
 	f.x = clampf(f.x, 30.0, 950.0)
-	f.y = clampf(f.y, 185.0, 245.0)
+	f.y = clampf(f.y, 212.0, 252.0)
 
 
 func _phys_friction(o, rate: float) -> void:
@@ -225,7 +260,7 @@ func _phys_friction(o, rate: float) -> void:
 	o.x += o.vx
 	o.y += o.vy
 	o.x = clampf(o.x, 30.0, 950.0)
-	o.y = clampf(o.y, 185.0, 245.0)
+	o.y = clampf(o.y, 212.0, 252.0)
 
 
 # ------------------------------------------------------------------ flow ---
@@ -259,6 +294,13 @@ func _start_fight() -> void:
 	score = 0
 	spawnT = 0
 	camX = 0.0
+	props = [
+		{"x": 300.0, "y": 220.0, "type": "barrel", "hp": 20.0, "broken": false, "t": 0},
+		{"x": 340.0, "y": 245.0, "type": "crate", "hp": 20.0, "broken": false, "t": 0},
+		{"x": 550.0, "y": 248.0, "type": "barrel", "hp": 20.0, "broken": false, "t": 0},
+		{"x": 880.0, "y": 222.0, "type": "crate", "hp": 20.0, "broken": false, "t": 0},
+		{"x": 920.0, "y": 248.0, "type": "barrel", "hp": 20.0, "broken": false, "t": 0},
+	]
 	_spawn_wave()
 	state = "fight"
 
@@ -357,7 +399,7 @@ func _update_fight() -> void:
 			p.vx *= 0.7
 			p.vy *= 0.7
 		p.x = clampf(p.x + p.vx, 30.0, 950.0)
-		p.y = clampf(p.y + p.vy, 185.0, 245.0)
+		p.y = clampf(p.y + p.vy, 212.0, 252.0)
 	elif p.st == "hurt":
 		p.t += 1
 		_phys_friction(p, 0.88)
@@ -561,7 +603,7 @@ func _update_foe(f: Foe) -> void:
 		var d: float = sqrt(ox * ox + oy * oy)
 		if d < 48.0 and d > 0.5:
 			f.x += (ox / d) * 1.4
-			f.y = clampf(f.y + (oy / d) * 1.0, 185.0, 245.0)
+			f.y = clampf(f.y + (oy / d) * 1.0, 212.0, 252.0)
 
 
 # ---------------------------------------------------------------- drawing ---
@@ -693,14 +735,24 @@ func _draw_fight() -> void:
 	var p := player
 	if p == null:
 		return
-	# actors sorted by y
+	# actors + props sorted by y
 	var actors: Array = [p]
 	for f in foes:
 		if f.hp > 0.0 or f.t < 60:
 			actors.append(f)
-	actors.sort_custom(func(a, b): return a.y < b.y)
+	for pr in props:
+		# hide rubble shortly after breaking
+		if not bool(pr["broken"]) or int(pr["t"]) < 90:
+			actors.append(pr)
+	actors.sort_custom(func(a, b): return float(a["y"] if a is Dictionary else a.y) < float(b["y"] if b is Dictionary else b.y))
 
 	for a in actors:
+		# props are dictionaries; draw them simply
+		if a is Dictionary:
+			var ptex: Texture2D = PROP_TEX[a["type"] + ("_broken" if bool(a["broken"]) else "")]
+			_draw_sprite_tex(ptex, Vector2(float(a["x"]) - camX, float(a["y"])), 1, 44.0, 0.0, 1.0)
+			a["t"] = int(a["t"]) + 1
+			continue
 		var isP: bool = (a == p)
 		var tex: Texture2D = _pick_frame(a, isP)
 
@@ -749,8 +801,17 @@ func _draw_fight() -> void:
 			"launch":
 				_draw_text("SMASH!", Vector2(ex, ey - e["t"] * 2.0), 14, Color(1, 1, 0), HORIZONTAL_ALIGNMENT_CENTER)
 			"kebab":
-				draw_rect(Rect2(ex - 8, ey - 4, 16, 8), Color(0.65, 0.16, 0.16))
-				draw_rect(Rect2(ex - 8, ey - 4, 16, 3), Color(0.82, 0.41, 0.12))
+				# doner kebab on a skewer, bobbing with a glow so it's noticeable
+				var kb: float = sin(gt * 0.15 + e["x"]) * 3.0
+				var ky: float = ey - 8.0 + kb
+				draw_circle(Vector2(ex, ky), 10.0, Color(1.0, 0.85, 0.3, 0.25))
+				# skewer stick
+				draw_line(Vector2(ex - 10, ky + 6), Vector2(ex + 10, ky - 6), Color(0.55, 0.38, 0.2), 2.0)
+				# meat chunks
+				draw_circle(Vector2(ex - 4, ky), 4.5, Color(0.65, 0.3, 0.12))
+				draw_circle(Vector2(ex + 2, ky - 2), 4.5, Color(0.72, 0.36, 0.14))
+				draw_circle(Vector2(ex - 4, ky), 2.0, Color(0.85, 0.55, 0.25))
+				draw_circle(Vector2(ex + 2, ky - 2), 2.0, Color(0.9, 0.6, 0.3))
 			"spec":
 				_draw_text(e["txt"], Vector2(ex, ey - e["t"]), 14, Color(0.79, 0.64, 0.15), HORIZONTAL_ALIGNMENT_CENTER)
 			"block":
@@ -760,6 +821,15 @@ func _draw_fight() -> void:
 				_draw_text("!", Vector2(ex, ey - fmod(e["t"], 8.0)), 16, Color(1, 0, 0), HORIZONTAL_ALIGNMENT_CENTER)
 			"slam":
 				draw_arc(Vector2(ex, ey), 20.0 + e["t"] * 3.0, 0.0, 6.0, 16, Color(1, 0.53, 0), 4.0)
+			"hypeget":
+				_draw_text(e["txt"], Vector2(ex, ey - e["t"] * 1.5), 10, Color(0.79, 0.64, 0.15), HORIZONTAL_ALIGNMENT_CENTER)
+			"debris":
+				# wood chips flying
+				for di in 3:
+					var ang: float = -1.2 + di * 0.6
+					var dx2: float = cos(ang) * (6.0 + e["t"] * 2.5)
+					var dy2: float = sin(ang) * (6.0 + e["t"] * 2.5) - e["t"] * 1.2
+					draw_rect(Rect2(ex + dx2 - 2, ey + dy2 - 2, 5, 4), Color(0.55, 0.38, 0.2))
 
 	# HUD
 	draw_rect(Rect2(0, 0, W, 28), Color.BLACK)
