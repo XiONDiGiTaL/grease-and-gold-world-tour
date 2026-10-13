@@ -56,6 +56,27 @@ G.buildBackdrop = function (st, idx) {
     for (let x = 0; x < midW; ) { const w = 120; m.fillStyle = '#16121f'; m.fillRect(x, 20, w, 114); m.fillStyle = '#d4a31c'; m.fillRect(x, 20, w, 3); m.fillRect(x, 130, w, 4); for (let c = 0; c < 4; c++) { m.fillStyle = '#242030'; m.fillRect(x + 8 + c * 28, 28, 14, 100); m.fillStyle = '#d4a31c'; m.fillRect(x + 8 + c * 28, 28, 14, 2); m.fillRect(x + 8 + c * 28, 124, 14, 3); m.fillStyle = '#34304a'; m.fillRect(x + 10 + c * 28, 32, 2, 90); } m.fillStyle = '#f0c43c'; m.beginPath(); m.arc(x + 60, 58, 14, 0, 7); m.fill(); m.fillStyle = '#16121f'; m.beginPath(); m.arc(x + 60, 58, 10, 0, 7); m.fill(); m.fillStyle = '#f0c43c'; m.fillRect(x + 56, 54, 8, 8); x += w + 6; }
     g.fillStyle = '#1e1a28'; g.fillRect(0, FLOOR_TOP - 6, L, GH); g.fillStyle = '#d4a31c'; g.fillRect(0, FLOOR_TOP - 6, L, 3); for (let y = FLOOR_TOP; y < GH; y += 12 + (y - FLOOR_TOP) / 10) { g.fillStyle = '#2c2638'; g.fillRect(0, Math.floor(y), L, 1); for (let x = ((y * 5) % 40); x < L; x += 40) g.fillRect(Math.floor(x), Math.floor(y), 1, 14); } g.fillStyle = '#d4a31c'; g.fillRect(0, 169, L, 1); g.fillRect(0, 203, L, 1); g.strokeStyle = '#d4a31c'; g.lineWidth = 2; g.beginPath(); g.ellipse(L - 220, 170, 90, 28, 0, 0, 7); g.stroke();
   }
+  const R_=(c,x,y,w,h,col)=>{ c.fillStyle=col; c.fillRect(Math.round(x),Math.round(y),w,h); };
+  const lamp=(x,glow)=>{ R_(g,x,96,3,38,'#23202e'); R_(g,x-7,92,17,4,'#23202e'); R_(g,x-5,96,13,2,glow); g.fillStyle=glow.replace(')',',.18)').replace('rgb','rgba'); };
+  if (T === 'plaza') {
+    for (let x = 30; x < midW; x += 160 + r() * 70) { const w = 74, awn = ['#d8402f', '#f4e8c8']; R_(m, x, 96, w, 38, '#2a2438'); for (let i = 0; i < w; i += 6) R_(m, x + i, 94, 6, 9, awn[(i / 6) & 1]); R_(m, x, 103, w, 2, '#1a1424'); R_(m, x + 5, 108, w - 10, 24, '#ffd88a'); R_(m, x + 5, 108, w - 10, 3, '#b0801e'); for (let i = 0; i < 4; i++) R_(m, x + 10 + i * 16, 116, 8, 14, i % 2 ? '#8a5a3a' : '#c8884a'); R_(m, x + w / 2 - 14, 86, 28, 7, '#1a1424'); R_(m, x + w / 2 - 12, 88, 24, 3, '#f0c43c'); }
+    for (let x = 90; x < L; x += 230 + r() * 40) { lamp(x, 'rgb(255,233,160)'); }
+    for (let x = 300; x < L; x += 520) { for (let i = 0; i < 44; i += 8) R_(g, x + i, 172, 5, 28, '#ece6d6'); }
+    for (let x = 180; x < L; x += 410) { R_(g, x, 188, 14, 6, '#2c2c34'); R_(g, x + 1, 189, 12, 1, '#555563'); }
+    for (let x = 60; x < L; x += 300) R_(g, x, 126, 6, 8, '#c8321f');
+  } else if (T === 'docks') {
+    R_(g, 0, 118, L, 3, '#2a1c10'); for (let x = 0; x < L; x += 24) R_(g, x, 108, 3, 12, '#2a1c10'); R_(g, 0, 108, L, 2, '#3a281a');
+    for (let x = 140; x < L; x += 260) { R_(g, x, 90, 3, 30, '#23202e'); R_(g, x - 2, 86, 7, 5, '#f6e08a'); R_(g, x - 5, 91, 13, 3, 'rgba(246,224,138,.25)'); }
+    for (let x = 60; x < L; x += 330) { g.fillStyle = '#b89a6a'; g.beginPath(); g.ellipse(x, 126, 9, 4, 0, 0, 7); g.fill(); g.fillStyle = '#8a6c3c'; g.beginPath(); g.ellipse(x, 124, 6, 2.5, 0, 0, 7); g.fill(); }
+  } else if (T === 'pass') {
+    for (let x = 60; x < midW; x += 230) { R_(m, x, 70, 3, 64, '#2a2430'); R_(m, x - 14, 74, 31, 2, '#2a2430'); R_(m, x - 12, 79, 27, 2, '#2a2430'); }
+    m.strokeStyle = '#2a2430'; m.lineWidth = 1; for (let x = 60; x < midW - 230; x += 230) { m.beginPath(); m.moveTo(x + 17, 75); m.quadraticCurveTo(x + 115, 92, x + 213, 75); m.stroke(); }
+    for (let x = 120; x < L; x += 340) { R_(g, x, 116, 4, 18, '#3a7a3a'); R_(g, x - 5, 120, 4, 8, '#3a7a3a'); R_(g, x + 4, 118, 4, 8, '#3a7a3a'); R_(g, x - 5, 126, 12, 2, '#3a7a3a'); }
+    for (let x = 200; x < L; x += 500) { R_(g, x, 108, 2, 26, '#8a8a96'); R_(g, x - 7, 100, 16, 12, '#e8c840'); R_(g, x - 5, 102, 12, 8, '#2a2a32'); }
+  } else {
+    for (let x = 60; x < L; x += 200) { R_(g, x, 70, 9, 64, '#2a2438'); R_(g, x - 2, 66, 13, 5, '#d4a31c'); R_(g, x - 2, 130, 13, 4, '#d4a31c'); R_(g, x + 3, 80, 3, 5, '#f6d060'); R_(g, x + 3, 96, 3, 5, '#f6d060'); R_(g, x + 3, 112, 3, 5, '#f6d060'); }
+    R_(g, 0, 168, L, 36, 'rgba(120,20,30,.35)'); for (let x = 0; x < L; x += 90) R_(g, x, 168, 2, 36, 'rgba(212,163,28,.4)');
+  }
   return { far, mid, floor: flo };
 };
 })(globalThis.GG = globalThis.GG || {});

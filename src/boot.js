@@ -16,7 +16,7 @@ function frame(now) {
   game.renderLow(low); game.renderUI(view, low); requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-setTimeout(() => { game.initAssets(G.makeCanvas); game.state = 'title'; }, 60);
+G.loadFont().then(() => setTimeout(() => { game.initAssets(G.makeCanvas); game.state = 'title'; }, 60));
 document.addEventListener('visibilitychange', () => { if (document.hidden && game.state === 'play') { game.state = 'pause'; game.menu = 0; I.clear(); } });
 
 /* canvas taps for menus */

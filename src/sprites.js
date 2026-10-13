@@ -68,7 +68,7 @@ kit('raider', { name: 'Ashfall Raider', scale: 1.0, style: 'military', build: { 
 kit('ledger', { name: 'The Ledger', scale: 1.14, style: 'suit', build: { torso: 5.4, leg: 3.3, arm: 2.8, head: 6.6 }, weapon: 'case',
   face: { r: 6.6, hair: 'comb', hairC: '#d9d9e2', visor: '#48d17a', skin: '#e0b090' },
   pal: { skin: '#e0b090', sleeve: '#16301f', cuff: '#16301f', pants: '#16301f', shoe: '#101014', jacket: '#16301f', jacketD: '#0f2216', shirt: '#f0f0f0', tie: '#48d17a' } });
-kit('bigtony', { name: 'Big Tony', scale: 1.26, style: 'fat', build: { torso: 9.2, leg: 4.5, arm: 3.8, head: 7.6 },
+kit('bigtony', { name: 'Big Tony', scale: 1.12, style: 'fat', build: { torso: 9.2, leg: 4.5, arm: 3.8, head: 7.6 },
   face: { r: 7.6, hair: 'bald', hairC: '#2a1a14', beard: '#2a1a14', skin: '#c88a68' },
   pal: { skin: '#c88a68', sleeve: '#7a1f2b', cuff: '#7a1f2b', pants: '#2a2a2a', shoe: '#101014', jacket: '#7a1f2b', jacketD: '#5a1520', shirt: '#eadfc0', tie: '#f0c43c', chain: '#f0c43c' } });
 kit('mara', { name: 'Dusty Mara', scale: 1.04, style: 'military', build: { torso: 4.4, leg: 3.0, arm: 2.4, head: 6.2 }, weapon: 'baton', throws: true,
@@ -246,7 +246,7 @@ function drawWeapon(buf, k, pose, hand, hip, s) {
     buf.poly([[C2[0] - dx * w - px * h, C2[1] - dy * w - py * h], [C2[0] + dx * w - px * h, C2[1] + dy * w - py * h], [C2[0] + dx * w + px * h, C2[1] + dy * w + py * h], [C2[0] - dx * w + px * h, C2[1] - dy * w + py * h]], hex('#2b1d12'));
     buf.line([C2[0] - dx * w + px * h * .5, C2[1] - dy * w + py * h * .5], [C2[0] + dx * w + px * h * .5, C2[1] + dy * w + py * h * .5], .6, hex('#48d17a')); buf.disk(C2[0], C2[1], 1.4 * s, hex('#48d17a'));
   } else if (t === 'cane') {
-    const B = [hx + dx * 17 * s, hy + dy * 17 * s]; buf.slab([hx - dx * 4 * s, hy - dy * 4 * s], B, 1.2 * s, hex('#e0b02c')); buf.disk(B[0], B[1], 2.3 * s, hex('#f6d060')); buf.disk(B[0] - .6, B[1] - .6, .9 * s, hex('#fff2b0'));
+    const B = [hx + dx * 12 * s, hy + dy * 12 * s]; buf.slab([hx - dx * 4 * s, hy - dy * 4 * s], B, 1.2 * s, hex('#e0b02c')); buf.disk(B[0], B[1], 2.3 * s, hex('#f6d060')); buf.disk(B[0] - .6, B[1] - .6, .9 * s, hex('#fff2b0'));
   }
 }
 
@@ -339,6 +339,7 @@ function figure(k, pose) {
 
 /* ---------- kit rendering ---------- */
 function renderKit(id, isPlayer) {
+  if (K[id].art && G.Sprites.renderRigKit) return G.Sprites.renderRigKit(id, isPlayer);
   const k = K[id], poses = buildPoses(k, isPlayer), frames = {}, rigs = {};
   for (const a in poses) { frames[a] = []; rigs[a] = []; poses[a].forEach(p => { const r = figure(k, p); frames[a].push(r.buf); rigs[a].push(r.rig); }); }
   return { id, kit: k, frames, rigs, poses };
@@ -350,11 +351,11 @@ function portrait(rk) { const r = rk.rigs.idle[0].head, b = rk.frames.idle[0], o
 const C = hex;
 function decodeArt(a) { const b = new Buf(a.w, a.h), bin = typeof atob !== 'undefined' ? atob(a.data) : Buffer.from(a.data, 'base64').toString('binary'), pal = a.pal.map(h => hex('#' + h)); for (let i = 0; i < bin.length; i++) { const v = bin.charCodeAt(i); if (v) b.d[i] = pal[v - 1]; } return b; }
 function makeProp(type) {
-  const b = new Buf(34, 36);
-  if (type === 'crate') { b.rect(3, 8, 28, 26, C('#a8702f')); b.rect(3, 8, 28, 3, C('#c98d45')); b.rect(5, 12, 24, 20, C('#8d5a25')); for (let i = 0; i < 3; i++) b.rect(5, 14 + i * 7, 24, 1, C('#6a4219')); b.line([5, 12], [29, 32], .9, C('#6a4219')); b.line([29, 12], [5, 32], .9, C('#6a4219')); b.rect(3, 8, 3, 26, C('#c98d45')); b.rect(28, 8, 3, 26, C('#7a4d1f')); b.rect(13, 19, 8, 6, C('#f0c43c')); b.rect(15, 21, 4, 2, C('#a8731d')); }
-  if (type === 'barrel') { b.ell(17, 18, 11, 16, C('#3b6aa8')); b.rect(6, 8, 22, 21, C('#3b6aa8')); b.rect(6, 8, 4, 21, C('#5b8bc8')); b.rect(24, 8, 4, 21, C('#294e84')); b.ell(17, 8, 11, 4, C('#6b9bd6')); [10, 18, 27].forEach(y => b.rect(5, y, 24, 2, C('#9aa3b2'))); b.rect(12, 14, 10, 6, C('#f0c43c')); }
-  if (type === 'bin') { b.rect(5, 10, 24, 25, C('#7d8590')); b.rect(5, 10, 4, 25, C('#a3acb8')); b.rect(25, 10, 4, 25, C('#5a626d')); b.ell(17, 10, 13, 4, C('#9aa3b2')); b.rect(3, 7, 28, 3, C('#a3acb8')); for (let i = 0; i < 4; i++) b.rect(9 + i * 5, 14, 2, 18, C('#5a626d')); }
-  if (type === 'boxes') { b.rect(2, 18, 18, 16, C('#c49a5a')); b.rect(2, 18, 18, 3, C('#dcb878')); b.rect(8, 21, 6, 13, C('#9a7640')); b.rect(15, 4, 17, 15, C('#b98a4c')); b.rect(15, 4, 17, 3, C('#d4a868')); b.rect(21, 7, 5, 12, C('#8f6a38')); b.rect(18, 22, 14, 12, C('#a8793f')); b.rect(18, 22, 14, 3, C('#c8995a')); }
+  const b = new Buf(34, 36), hl = (c) => shade(c, 1.28), sd = (c) => shade(c, .72);
+  if (type === 'crate') { const w = C('#b07a36'); b.rect(3, 8, 28, 26, w); for (let y = 8; y < 34; y += 5) { b.rect(3, y, 28, 1, sd(w)); } b.rect(3, 8, 28, 3, hl(w)); for (let i = 0; i < 9; i++) b.rect(5 + (i * 7) % 24, 12 + (i * 5) % 20, 3, 1, hl(w)); b.rect(3, 8, 4, 26, C('#8a5a25')); b.rect(27, 8, 4, 26, C('#8a5a25')); b.rect(3, 8, 28, 3, C('#c98d45')); b.rect(3, 31, 28, 3, C('#8a5a25')); b.line([6, 11], [27, 31], .8, C('#6a4219')); b.line([27, 11], [6, 31], .8, C('#6a4219')); [[4, 9], [28, 9], [4, 31], [28, 31]].forEach(q => b.rect(q[0], q[1], 2, 2, C('#e8d8a8'))); b.rect(11, 17, 12, 8, C('#2a2236')); b.rect(12, 18, 10, 6, C('#f0c43c')); b.rect(14, 20, 6, 2, C('#7a5410')); }
+  if (type === 'barrel') { const w = C('#3b6aa8'); b.ell(17, 18, 11, 16, w); b.rect(6, 8, 22, 21, w); b.rect(6, 8, 5, 21, hl(w)); b.rect(11, 8, 3, 21, shade(w, 1.12)); b.rect(24, 8, 4, 21, sd(w)); b.ell(17, 8, 11, 4, C('#7aa9e0')); b.ell(17, 8, 8, 2.5, C('#5a86c0')); [10, 18, 27].forEach(y => { b.rect(5, y, 24, 2, C('#a8b0c0')); b.rect(5, y, 24, 1, C('#d8dde8')); }); b.rect(11, 13, 12, 5, C('#f0c43c')); for (let i = 0; i < 4; i++) b.rect(12 + i * 3, 13, 2, 5, i % 2 ? C('#2a2236') : C('#f0c43c')); b.rect(8, 22, 2, 5, C('#8a4a20')); b.rect(25, 24, 2, 3, C('#8a4a20')); }
+  if (type === 'bin') { const m = C('#7d8590'); b.rect(5, 10, 24, 25, m); b.rect(5, 10, 5, 25, hl(m)); b.rect(25, 10, 4, 25, sd(m)); for (let i = 0; i < 5; i++) { b.rect(10 + i * 4, 14, 2, 19, sd(m)); b.rect(11 + i * 4, 14, 1, 19, hl(m)); } b.ell(17, 10, 13, 4, C('#aab2be')); b.ell(17, 10, 10, 2.5, C('#8a929e')); b.rect(3, 7, 28, 3, C('#b4bcc8')); b.rect(3, 7, 28, 1, C('#e0e5ee')); b.rect(8, 4, 18, 3, C('#5a626d')); b.rect(4, 22, 2, 8, C('#4a525d')); b.rect(11, 28, 12, 4, C('#d8c8a0')); b.rect(12, 26, 4, 3, C('#a85a3a')); }
+  if (type === 'boxes') { const c1 = C('#c49a5a'), c2 = C('#b98a4c'); b.rect(2, 18, 18, 16, c1); b.rect(2, 18, 18, 3, hl(c1)); b.rect(8, 18, 5, 16, C('#d8c090')); b.rect(2, 31, 18, 3, sd(c1)); b.rect(15, 4, 17, 15, c2); b.rect(15, 4, 17, 3, hl(c2)); b.rect(21, 4, 5, 15, C('#d8c090')); b.rect(15, 16, 17, 3, sd(c2)); b.rect(18, 22, 14, 12, C('#a8793f')); b.rect(18, 22, 14, 3, C('#c8995a')); b.rect(21, 27, 8, 5, C('#f6efe0')); b.rect(22, 28, 6, 1, C('#8a3030')); b.rect(22, 30, 4, 1, C('#555')); }
   b.outline(OUT); return b;
 }
 const PROP_BASE = 35; // bottom row offset
@@ -400,5 +401,5 @@ function packRows(rk, mk) { // artist sheet: one animation per row
 }
 
 G.GS = GS;
-G.Sprites = { GS, CELL, AX, AY, COLS, K, TIMING, PLAYERS, ENEMIES, PLAYER_ANIMS, ENEMY_ANIMS, Buf, renderKit, packGame, packRows, portrait, makeProp, makeFood, makeEmptyPlate, makeFx, figure, buildPoses, ik };
+G.Sprites = { drawWeapon, GS, CELL, AX, AY, COLS, K, TIMING, PLAYERS, ENEMIES, PLAYER_ANIMS, ENEMY_ANIMS, Buf, renderKit, packGame, packRows, portrait, makeProp, makeFood, makeEmptyPlate, makeFx, figure, buildPoses, ik };
 })(typeof globalThis !== 'undefined' ? (globalThis.GG = globalThis.GG || {}) : window.GG);

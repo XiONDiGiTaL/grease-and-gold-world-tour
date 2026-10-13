@@ -1,6 +1,6 @@
 // node tests/run.js  - headless checks (no browser). Prints PASS/FAIL per rule.
 const path = require('path'); const { createCanvas } = require('@napi-rs/canvas');
-['foodart', 'sprites', 'input', 'audio', 'stages', 'game'].forEach(n => require('../src/' + n + '.js'));
+['foodart', 'rigart', 'sprites', 'rig', 'input', 'audio', 'stages', 'game'].forEach(n => require('../src/' + n + '.js'));
 const G = globalThis.GG; G.makeCanvas = (w, h) => createCanvas(w, h); const S = G.Sprites, I = G.Input;
 let pass = 0, fail = 0; const failures = [];
 const ok = (cond, name, info) => { if (cond) { pass++; console.log('PASS', name); } else { fail++; failures.push(name); console.log('FAIL', name, info !== undefined ? '-> ' + JSON.stringify(info) : ''); } };
@@ -18,7 +18,7 @@ bad = [];
 kits.forEach(([id]) => Object.entries(R[id].frames).forEach(([a, fs]) => fs.forEach((b, i) => { const bb = b.bbox(); if (bb.x1 < 0 || bb.x0 < 1 || bb.y0 < 1 || bb.x1 > S.CELL - 2 || bb.y1 > S.CELL - 2) bad.push(`${id}:${a}[${i}] bbox ${JSON.stringify(bb)}`); })));
 ok(!bad.length, 'no frame touches or is clipped by the fixed 112x112 canvas edge', bad.slice(0, 6));
 bad = [];
-kits.forEach(([id]) => { const k = S.K[id]; Object.entries(R[id].rigs).forEach(([a, rs]) => rs.forEach((r, i) => { const torso = Math.hypot(r.sh[0] - r.hip[0], r.sh[1] - r.hip[1]); if (Math.abs(torso - 18 * k.scale) > .01) bad.push(`${id}:${a}[${i}] torso ${torso.toFixed(2)}`); })); });
+kits.forEach(([id]) => { const ref = Math.hypot(R[id].rigs.idle[0].sh[0] - R[id].rigs.idle[0].hip[0], R[id].rigs.idle[0].sh[1] - R[id].rigs.idle[0].hip[1]); Object.entries(R[id].rigs).forEach(([a, rs]) => rs.forEach((r, i) => { const torso = Math.hypot(r.sh[0] - r.hip[0], r.sh[1] - r.hip[1]); if (Math.abs(torso - ref) > .01) bad.push(`${id}:${a}[${i}] torso ${torso.toFixed(2)} vs ${ref.toFixed(2)}`); })); });
 ok(!bad.length, 'torso length identical in every frame of a kit (no shrinking during attacks)', bad.slice(0, 6));
 // planted feet: lowest opaque pixel (outline row) must be exactly the anchor row on grounded frames
 bad = [];

@@ -1,6 +1,6 @@
 // Exports the single source of truth (tables, atlases, backdrops, fx) for the Godot port.
 const fs = require('fs'), path = require('path'); const { createCanvas } = require('@napi-rs/canvas');
-['foodart', 'sprites', 'input', 'audio', 'stages', 'game'].forEach(n => require('../src/' + n + '.js'));
+['foodart', 'rigart', 'sprites', 'rig', 'input', 'audio', 'stages', 'game'].forEach(n => require('../src/' + n + '.js'));
 const G = globalThis.GG, S = G.Sprites; G.makeCanvas = (w, h) => createCanvas(w, h);
 const root = path.join(__dirname, '..', 'godot'); const mk = (w, h) => createCanvas(w, h);
 const atlas = {}; [...S.PLAYERS, ...S.ENEMIES].forEach(id => { const j = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'assets', 'sprites', id + '.json'))); atlas[id] = j.anims; fs.copyFileSync(path.join(__dirname, '..', 'assets', 'sprites', id + '.png'), path.join(root, 'assets', 'sprites', id + '.png')); fs.copyFileSync(path.join(__dirname, '..', 'assets', 'sprites', id + '_portrait.png'), path.join(root, 'assets', 'sprites', id + '_portrait.png')); });
