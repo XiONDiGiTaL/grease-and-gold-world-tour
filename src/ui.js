@@ -88,27 +88,26 @@ P.uiTitle = function (ctx, S1, W, H) {
   T(ctx, 'Browser playtest build', W / 2, u(214.5), u(4.4), DIM, 'center');
 };
 P.uiSelect = function (ctx, S1, W, H) {
-  const u = (v) => v * S1, ids = Object.keys(G.CH); T(ctx, 'CHOOSE YOUR FIGHTER', W / 2, u(20), u(13), GOLD, 'center');
-  ids.forEach((id, i) => { const d = G.CH[id], cx = GW / 2 + (i - 1) * 124, x = cx - 56, y = 28, sel = i === this.sel, sh = this.sheets[d.kit]; box(ctx, u(x), u(y), u(112), u(176), sel ? '#2a1238' : '#1a0d26', sel ? GOLD : '#4a3a5a', u(sel ? 2 : 1));
-    if (sh) { const idx = sh.index.idle, fr = idx.start + (sel ? Math.floor(this.t / 14) % 4 : 0), sx = (fr % COLS) * CELL, sy = Math.floor(fr / COLS) * CELL; ctx.globalAlpha = sel ? 1 : .6; ctx.drawImage(sh.canvas, sx + AX - 40, sy + AY - 78, 80, 82, u(cx - 40), u(y + 4), u(80), u(82)); ctx.globalAlpha = 1; }
-    T(ctx, d.name, u(cx), u(y + 98), u(11), sel ? GOLD2 : CREAM, 'center'); T(ctx, d.weapon, u(cx), u(y + 107), u(5.8), DIM, 'center');
-    T(ctx, 'SPECIAL', u(x + 8), u(y + 120), u(6), MAG); T(ctx, d.special, u(x + 46), u(y + 120), u(6.4), CREAM);
-    stat(ctx, u(x + 8), u(y + 133), 'POWER', d.stats.power, S1); stat(ctx, u(x + 8), u(y + 142), 'SPEED', d.stats.speed, S1); stat(ctx, u(x + 8), u(y + 151), 'REACH', d.stats.reach, S1); stat(ctx, u(x + 8), u(y + 160), 'HEALTH', d.stats.health, S1);
-    const bl = d.blurb.split('|'); bl.forEach((l, k) => T(ctx, l, u(cx), u(y + 169 + k * 5.6), u(4.9), DIM, 'center')); });
-  T(ctx, 'LEFT / RIGHT choose     ENTER fight     ESC back', W / 2, u(212), u(6), CREAM, 'center');
+  const u = (v) => v * S1, ids = Object.keys(G.CH); T(ctx, 'CHOOSE YOUR FIGHTER', W / 2, u(13), u(11), GOLD, 'center');
+  ids.forEach((id, i) => { const d = G.CH[id], cx = GW / 2 + (i - 1) * 124, x = cx - 56, y = 17, sel = i === this.sel, sh = this.sheets[d.kit]; box(ctx, u(x), u(y), u(112), u(190), sel ? '#2a1238' : '#1a0d26', sel ? GOLD : '#4a3a5a', u(sel ? 2 : 1));
+    if (sh) { const idx = sh.index.idle, fr = idx.start + (sel ? Math.floor(this.t / 14) % 4 : 0), sx = (fr % COLS) * CELL, sy = Math.floor(fr / COLS) * CELL; ctx.globalAlpha = sel ? 1 : .6; ctx.drawImage(sh.canvas, sx + AX - 52, sy + AY - 100, 104, 104, u(cx - 52), u(y + 3), u(104), u(104)); ctx.globalAlpha = 1; }
+    T(ctx, d.name, u(cx), u(y + 121), u(11), sel ? GOLD2 : CREAM, 'center'); T(ctx, d.weapon, u(cx), u(y + 130), u(5.8), DIM, 'center');
+    T(ctx, 'SPECIAL', u(x + 8), u(y + 142), u(6), MAG); T(ctx, d.special, u(x + 46), u(y + 142), u(6.4), CREAM);
+    stat(ctx, u(x + 8), u(y + 154), 'POWER', d.stats.power, S1); stat(ctx, u(x + 8), u(y + 163), 'SPEED', d.stats.speed, S1); stat(ctx, u(x + 8), u(y + 172), 'REACH', d.stats.reach, S1); stat(ctx, u(x + 8), u(y + 181), 'HEALTH', d.stats.health, S1); });
+  T(ctx, G.CH[ids[this.sel]].blurb.replace('|', ' '), W / 2, u(214), u(5.6), CREAM, 'center');
 };
 P.uiHud = function (ctx, S1, W, H) {
   const u = (v) => v * S1, p = this.players[0]; if (!p) return; const d = p.def;
-  box(ctx, u(6), u(6), u(36), u(36), INK, GOLD, u(2)); const pt = this.portraits[d.kit]; if (pt) ctx.drawImage(pt, u(8), u(8), u(32), u(32));
-  T(ctx, d.name, u(48), u(15), u(8.5), GOLD2); T(ctx, 'x' + Math.max(0, this.lives), u(150), u(15), u(8.5), CREAM, 'right');
+  box(ctx, u(6), u(6), u(44), u(44), INK, GOLD, u(2)); const pt = this.portraits[d.kit]; if (pt) ctx.drawImage(pt, u(8), u(8), u(40), u(40));
+  T(ctx, d.name, u(56), u(15), u(8.5), GOLD2); T(ctx, 'x' + Math.max(0, this.lives), u(156), u(15), u(8.5), CREAM, 'right');
   const bar = (x, y, w, h, pct, col, back) => { box(ctx, u(x), u(y), u(w), u(h), back, CREAM, u(1)); ctx.fillStyle = col; ctx.fillRect(u(x), u(y), u(w * Math.max(0, pct)), u(h)); ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(u(x), u(y), u(w * Math.max(0, pct)), u(h * .3)); ctx.fillStyle = 'rgba(20,9,28,.5)'; for (let i = 1; i < 10; i++) ctx.fillRect(u(x + w * i / 10) - 1, u(y), 1, u(h)); };
-  T(ctx, 'HP', u(48), u(26), u(6), CREAM); bar(72, 19.5, 78, 8, p.hp / p.maxhp, p.hp / p.maxhp < .3 && (this.t >> 3) & 1 ? '#ff7a5a' : '#e0322e', '#3a1420');
-  T(ctx, 'HYPE', u(48), u(36), u(6), MAG); bar(72, 31, 78, 6, p.hype / 100, p.state === 'special' ? GOLD2 : GOLD, '#33210a');
-  T(ctx, String(this.score).padStart(6, '0'), u(GW / 2), u(16), u(13), CREAM, 'center'); T(ctx, 'SCORE', u(GW / 2), u(24), u(5.5), DIM, 'center');
+  T(ctx, 'HP', u(56), u(27), u(6), CREAM); bar(80, 20.5, 76, 8, p.hp / p.maxhp, p.hp / p.maxhp < .3 && (this.t >> 3) & 1 ? '#ff7a5a' : '#e0322e', '#3a1420');
+  T(ctx, 'HYPE', u(56), u(38), u(6), MAG); bar(80, 32.5, 76, 6, p.hype / 100, p.state === 'special' ? GOLD2 : GOLD, '#33210a');
+  T(ctx, String(this.score).padStart(6, '0'), u(GW / 2 + 20), u(16), u(13), CREAM, 'center'); T(ctx, 'SCORE', u(GW / 2 + 20), u(24), u(5.5), DIM, 'center');
   if (this.lastEnemyT > 0 && this.lastEnemy && !this.lastEnemy.boss) { const e = this.lastEnemy; T(ctx, e.def.name, u(GW - 8), u(15), u(7), CREAM, 'right'); bar(GW - 98, 19, 90, 6, e.hp / e.maxhp, '#d93aa0', '#2a1030'); }
   const boss = this.enemies.find(e => e.boss && e.state !== 'dead' && !e.remove);
   if (boss && boss.state !== 'spawn') { T(ctx, boss.def.name.toUpperCase(), u(GW / 2), u(GH - 19), u(8.5), GOLD2, 'center'); bar(GW / 2 - 110, GH - 15, 220, 9, boss.hp / boss.maxhp, '#d93aa0', '#2a1030'); }
-  if (this.combo.n >= 2 && this.combo.t > 0) { const pop = Math.max(0, (this.combo.pop = Math.max(0, (this.combo.pop || 0) - .5))); T(ctx, this.combo.n + ' HITS', u(8), u(58), u(10 + pop * .6), (this.combo.n >= 8 ? GOLD2 : CREAM)); }
+  if (this.combo.n >= 2 && this.combo.t > 0) { const pop = Math.max(0, (this.combo.pop = Math.max(0, (this.combo.pop || 0) - .5))); T(ctx, this.combo.n + ' HITS', u(8), u(66), u(10 + pop * .6), (this.combo.n >= 8 ? GOLD2 : CREAM)); }
   if (this.state === 'play') {
     if (this.banner > 0 && this.stage) { const a = Math.min(1, this.banner / 20, (170 - this.banner) / 12 + .2); ctx.globalAlpha = a; ctx.fillStyle = 'rgba(20,9,28,.78)'; ctx.fillRect(0, u(78), W, u(52)); ctx.fillStyle = MAG; ctx.fillRect(0, u(78), W, u(2)); ctx.fillRect(0, u(128), W, u(2)); T(ctx, this.stage.tour, W / 2, u(94), u(8), MAG, 'center'); T(ctx, this.stage.name.toUpperCase(), W / 2, u(118), u(22), GOLD, 'center'); ctx.globalAlpha = 1; }
     if (this.bossBanner > 0 && (this.bossBanner >> 3) & 1) T(ctx, 'WARNING   BOSS', W / 2, u(84), u(18), RED, 'center');

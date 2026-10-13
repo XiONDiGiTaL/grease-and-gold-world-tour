@@ -1,6 +1,6 @@
 // Renders real game frames headlessly to shots/*.png (for visual review).
 const fs = require('fs'), path = require('path'); const { createCanvas } = require('@napi-rs/canvas');
-['sprites', 'input', 'audio', 'stages', 'game', 'ui'].forEach(n => require('../src/' + n + '.js'));
+['foodart', 'sprites', 'input', 'audio', 'stages', 'game', 'ui'].forEach(n => require('../src/' + n + '.js'));
 const G = globalThis.GG, I = G.Input; G.makeCanvas = (w, h) => createCanvas(w, h);
 const SC = 3, view = createCanvas(384 * SC, 216 * SC), low = createCanvas(384, 216);
 const g = new G.Game(); g.initAssets(G.makeCanvas);

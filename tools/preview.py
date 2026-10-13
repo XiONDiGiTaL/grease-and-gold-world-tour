@@ -2,7 +2,7 @@ import json,sys
 from PIL import Image
 D='/home/claude/grease-and-gold/assets/sprites/'
 def sheet(id, anims, bg=(70,70,96,255)):
-    im=Image.open(D+id+'.png').convert('RGBA'); j=json.load(open(D+id+'.json')); C=112
+    im=Image.open(D+id+'.png').convert('RGBA'); j=json.load(open(D+id+'.json')); C=j['cell']
     cols=max(j['anims'][a]['n'] for a in anims)
     out=Image.new('RGBA',(cols*C,len(anims)*C),bg)
     for r,a in enumerate(anims):

@@ -1,6 +1,6 @@
 // node tests/run.js  - headless checks (no browser). Prints PASS/FAIL per rule.
 const path = require('path'); const { createCanvas } = require('@napi-rs/canvas');
-['sprites', 'input', 'audio', 'stages', 'game'].forEach(n => require('../src/' + n + '.js'));
+['foodart', 'sprites', 'input', 'audio', 'stages', 'game'].forEach(n => require('../src/' + n + '.js'));
 const G = globalThis.GG; G.makeCanvas = (w, h) => createCanvas(w, h); const S = G.Sprites, I = G.Input;
 let pass = 0, fail = 0; const failures = [];
 const ok = (cond, name, info) => { if (cond) { pass++; console.log('PASS', name); } else { fail++; failures.push(name); console.log('FAIL', name, info !== undefined ? '-> ' + JSON.stringify(info) : ''); } };
@@ -62,7 +62,7 @@ const put = (g, type, dx, dy, st) => { const p = g.players[0], e = g.makeEnemy(t
 // movement + walk phase distance sync
 { const g = mk('ricky'); const p = g.players[0]; p.x = 120; g.cam.x = 60; const x0 = p.x, ph0 = p.phase; let phTotal = 0, last = p.phase; I.set('right', true);
   for (let i = 0; i < 60; i++) { step(g); let d = p.phase - last; if (d < -.5) d += 1; phTotal += d; last = p.phase; } I.set('right', false);
-  const dist = p.x - x0; ok(dist > 60, 'holding right moves the fighter', dist); ok(Math.abs(phTotal * 40 - dist) < 6, 'walk-cycle phase advances with distance travelled (feet planted, no sliding)', { cyc: phTotal * 40, dist }); }
+  const dist = p.x - x0; ok(dist > 60, 'holding right moves the fighter', dist); ok(Math.abs(phTotal * p.stride - dist) < 6, 'walk-cycle phase advances with distance travelled (feet planted, no sliding)', { cyc: phTotal * p.stride, dist }); }
 // backward walking reverses animation
 { const g = mk('ricky'); const p = g.players[0]; p.face = -1; p.vx = 1.5; p.state = 'walk'; const ph = p.phase; g.walkPhase(p); const d1 = p.phase - ph; ok(d1 < 0 || d1 > .5, 'moving against facing plays the walk cycle in reverse'); }
 // jump separates height from ground plane
@@ -93,7 +93,7 @@ const put = (g, type, dx, dy, st) => { const p = g.players[0], e = g.makeEnemy(t
 // poise-armored enemy hit by a knock-type move must recover from hit-stun (regression: stun was undefined -> stuck forever)
 { const g = mk('ricky'); clearEnemies(g); const p = g.players[0]; p.x = 150; g.cam.x = 90; const h = put(g, 'heavy', 36, 0); h.hp = h.maxhp = 900; h.poise = 999; g.hurt(h, p, { dmg: 1, knock: true, launch: 2, kb: 2, hs: 0, box: { z0: 10, z1: 40 } }); step(g, 60); ok(h.state === 'idle' && Number.isFinite(h.stun), 'heavy hit by a knock-move without poise break recovers from hit-stun (no stuck state)', { s: h.state, stun: h.stun }); }
 // crowd separation
-{ const g = mk('ricky'); clearEnemies(g); const p = g.players[0]; p.x = 200; g.cam.x = 150; for (let i = 0; i < 5; i++) { const e = put(g, 'guard', 160 - 200 + 150 + 0, 0); e.x = 120; e.y = 170; e.cool = 9999; } step(g, 90); let mn = 1e9; for (let i = 0; i < g.enemies.length; i++) for (let j = i + 1; j < g.enemies.length; j++) mn = Math.min(mn, Math.hypot(g.enemies[i].x - g.enemies[j].x, (g.enemies[i].y - g.enemies[j].y) * 2)); ok(mn > 12, 'crowd separation pulls stacked enemies apart', mn); }
+{ const g = mk('ricky'); clearEnemies(g); const p = g.players[0]; p.x = 200; g.cam.x = 150; for (let i = 0; i < 5; i++) { const e = put(g, 'guard', 160 - 200 + 150 + 0, 0); e.x = 120; e.y = 170; e.cool = 9999; } step(g, 90); let mn = 1e9; for (let i = 0; i < g.enemies.length; i++) for (let j = i + 1; j < g.enemies.length; j++) { const A = g.enemies[i], B = g.enemies[j]; mn = Math.min(mn, Math.hypot((A.x - B.x) / ((A.hw + B.hw) * .9), (A.y - B.y) / 10)); } ok(mn > .8, 'crowd separation pulls stacked enemies apart (no body overlap)', mn); }
 // enemy windup readability
 { const g = mk('ricky'); clearEnemies(g); const p = g.players[0]; p.x = 150; g.cam.x = 90; p.invuln = 0; g.godMode = true; const e = put(g, 'exec', 30, 0); e.cool = 0; e.token = true; let warnTicks = 0, lastWarn = false; for (let i = 0; i < 120; i++) { step(g); g.updateTokens(); e.token = true; if (e.warn) warnTicks++; } ok(warnTicks >= 15, 'enemy telegraphs its attack with a held windup frame + warning icon', warnTicks); }
 // player damage and death -> lives

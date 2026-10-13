@@ -47,12 +47,12 @@ func _initialize() -> void:
   var bad := []
   for id in D.players + D.enemies:
     var tex: Texture2D = load("res://assets/sprites/%s.png" % id)
-    if tex == null or tex.get_width() != 896:
+    if tex == null or tex.get_width() != 8 * int(D.cell):
       bad.append(id)
     for a in D.atlas[id]:
       if not g.TIMING.has(a) or int(D.atlas[id][a].n) != g.TIMING[a].size():
         bad.append(id + ":" + a)
-      if (int(D.atlas[id][a].row) + 1) * 112 > tex.get_height():
+      if (int(D.atlas[id][a].row) + 1) * int(D.cell) > tex.get_height():
         bad.append(id + ":" + a + ":row")
   ok(bad.is_empty(), "every sprite sheet loads, is 8 columns of 112px, and atlas frame counts match animation timing", bad)
   ok(g.renderer != null and g.renderer.sheets.size() == 12 and g.renderer.bgs.size() == 4, "renderer loaded all sheets and 4 stage backdrops")
@@ -74,7 +74,7 @@ func _initialize() -> void:
     last = p.phase
   g.set_btn("right", false)
   ok(p.x - x0 > 60.0, "holding right moves the fighter", p.x - x0)
-  ok(absf(total * 40.0 - (p.x - x0)) < 6.0, "walk-cycle phase advances with distance travelled (no foot sliding)", [total * 40.0, p.x - x0])
+  ok(absf(total * p.stride - (p.x - x0)) < 6.0, "walk-cycle phase advances with distance travelled (no foot sliding)", [total * p.stride, p.x - x0])
   p = fresh("vv")
   p.x = 150.0
   g.cam_x = 90.0
@@ -287,8 +287,8 @@ func _initialize() -> void:
     for j in range(i + 1, g.enemies.size()):
       var A = g.enemies[i]
       var B = g.enemies[j]
-      mn = minf(mn, Vector2(A.x - B.x, (A.y - B.y) * 2.0).length())
-  ok(mn > 12.0, "crowd separation", mn)
+      mn = minf(mn, Vector2((A.x - B.x) / ((A.hw + B.hw) * 0.9), (A.y - B.y) / 10.0).length())
+  ok(mn > 0.8, "crowd separation (no body overlap)", mn)
   # life loss
   p = fresh("ricky")
   g.enemies = []

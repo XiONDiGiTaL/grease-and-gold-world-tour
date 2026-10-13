@@ -2,6 +2,7 @@
 (function (G) {
 'use strict';
 const S = G.Sprites, I = G.Input, A = G.Audio, GW = G.GW, FT = G.FLOOR_TOP, FB = G.FLOOR_BOT;
+const GS = S.GS; /* sprites are GS x bigger than the original tuning: reach/height/stride scale with them */
 const GRAV = .24, JUMPV = 4.7, WALK = 1.5, WALKY = 1.0, DRAIN = .28; /* HYPE drain per tick while a special is held (~17/s) */
 G.CONST = { GRAV, JUMPV, WALK, WALKY, DRAIN };
 if (typeof document !== 'undefined' && !G.makeCanvas) G.makeCanvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
@@ -13,7 +14,7 @@ G.CH = {
     moves: [{ hit: [1, 2], box: bx(6, 52, 9, 8, 48), dmg: 5, kb: .7, stun: 15, hs: 3, hype: 5 }, { hit: [1, 2], box: bx(0, 52, 18, 6, 56), dmg: 6, kb: .9, stun: 16, hs: 3, hype: 5 }, { hit: [2, 3], box: bx(6, 46, 13, 0, 58), dmg: 10, kb: 3, knock: true, launch: 2.8, hs: 7, hype: 8 }],
     spec: { pulse: 10, box: bx(-14, 62, 16, 0, 62), dmg: 3, kb: .9, stun: 14, hs: 2, knockEvery: 4, omni: false } },
   vv: { name: 'V.V.', kit: 'vv', hp: 90, spd: 1.68, rate: 1.16, weapon: 'Vintage mic & cord', special: 'Mic Drop', blurb: 'Fast striker. The cord whip|reaches farthest.', stats: { power: 2, speed: 5, reach: 4, health: 2 },
-    moves: [{ hit: [1, 2], box: bx(2, 44, 10, 10, 52), dmg: 4, kb: .6, stun: 14, hs: 3, hype: 5 }, { hit: [2], box: bx(4, 60, 11, 12, 50), dmg: 5, kb: .9, stun: 16, hs: 3, hype: 5 }, { hit: [2, 3], box: bx(0, 44, 12, 0, 58), dmg: 8, kb: 3, knock: true, launch: 2.6, hs: 7, hype: 8 }],
+    moves: [{ hit: [1, 2], box: bx(2, 44, 10, 10, 52), dmg: 4, kb: .6, stun: 14, hs: 3, hype: 5 }, { hit: [2], box: bx(4, 52, 11, 12, 50), dmg: 5, kb: .9, stun: 16, hs: 3, hype: 5 }, { hit: [2, 3], box: bx(0, 44, 12, 0, 58), dmg: 8, kb: 3, knock: true, launch: 2.6, hs: 7, hype: 8 }],
     spec: { pulse: 12, box: bx(-54, 54, 18, 0, 58), dmg: 3, kb: 1, stun: 14, hs: 2, knockEvery: 3, omni: true } },
   johnny: { name: 'Johnny $', kit: 'johnny', hp: 118, spd: 1.36, rate: .9, weapon: 'Giant salami', special: 'Salami Slam', blurb: 'Heavy hitter. Slow, big arcs,|huge knockback.', stats: { power: 5, speed: 2, reach: 3, health: 5 },
     moves: [{ hit: [1, 2], box: bx(4, 48, 12, 8, 50), dmg: 6, kb: .8, stun: 17, hs: 4, hype: 5 }, { hit: [1, 2], box: bx(0, 50, 15, 6, 54), dmg: 7, kb: 1.1, stun: 18, hs: 4, hype: 5 }, { hit: [2, 3], box: bx(4, 50, 14, 0, 60), dmg: 12, kb: 3.6, knock: true, launch: 3.2, hs: 8, hype: 9 }],
@@ -54,6 +55,10 @@ G.ED = {
   auditor: { kit: 'auditor', name: 'The Auditor', hp: 350, spd: 1.35, boss: true, poise: 40, summonAt: .5, moves: ['baton', 'kick', 'smash', 'charge'], grabEscape: 55, score: 6000 }
 };
 G.ED.auditor.moves = ['punch', 'kick', 'smash', 'charge'];
+(function applyScale() { const sb = (b) => { b.x0 *= GS; b.x1 *= GS; b.z0 *= GS; b.z1 *= GS; };
+  Object.values(G.CH).forEach(c => { c.moves.forEach(m => sb(m.box)); sb(c.spec.box); }); sb(JATK.box); sb(JDOWN.box);
+  Object.values(EM).forEach(m => { if (m.box) sb(m.box); if (m.engage && m.engage < 900) m.engage *= GS; }); })();
+G.CONST.GS = GS;
 
 /* ---------- helpers ---------- */
 const sgn = (v) => v < 0 ? -1 : 1, clamp = (v, a, b) => Math.max(a, Math.min(b, v)), rnd = (a, b) => a + Math.random() * (b - a);
@@ -86,11 +91,11 @@ class Game {
   }
   makePlayer(id) {
     const def = G.CH[id], kit = S.K[def.kit];
-    return { kind: 'fighter', team: 'p', id, def, kitId: def.kit, x: 70, y: 172, z: 0, vx: 0, vy: 0, vz: 0, face: 1, hp: def.hp, maxhp: def.hp, hype: 30, state: 'idle', anim: 'idle', frame: 0, ft: 0, phase: 0, hw: 11 * kit.scale, hd: 7, ht: 56 * kit.scale, invuln: 90, flash: 0, hitChain: 0, chainT: 0, comboTimer: 0, nextStep: 0, step: 0, hitSet: new Set(), rate: def.rate, spT: 0, pulses: 0, held: null, grabT: 0, gcount: 0, downT: 0, deadT: 0 };
+    return { kind: 'fighter', team: 'p', id, def, kitId: def.kit, x: 70, y: 172, z: 0, vx: 0, vy: 0, vz: 0, face: 1, hp: def.hp, maxhp: def.hp, hype: 30, state: 'idle', anim: 'idle', frame: 0, ft: 0, phase: 0, hw: 11 * kit.scale, hd: 7, ht: 56 * kit.scale, stride: 40 * kit.scale, runStride: 56 * kit.scale, invuln: 90, flash: 0, hitChain: 0, chainT: 0, comboTimer: 0, nextStep: 0, step: 0, hitSet: new Set(), rate: def.rate, spT: 0, pulses: 0, held: null, grabT: 0, gcount: 0, downT: 0, deadT: 0 };
   }
   makeEnemy(type, x, y) {
     const d = G.ED[type], kit = S.K[d.kit], hp = d.hp;
-    return { kind: 'fighter', team: 'e', type, def: d, kitId: d.kit, x, y, z: 0, vx: 0, vy: 0, vz: 0, face: x > 0 ? -1 : 1, hp, maxhp: hp, state: 'spawn', anim: 'walk', frame: 0, ft: 0, phase: 0, hw: (d.hw || 11) * kit.scale, hd: 7, ht: 58 * kit.scale, invuln: 0, flash: 0, hitChain: 0, chainT: 0, cool: 40 + Math.random() * 40, token: false, ring: rnd(72, 118), laneOff: rnd(-26, 26), poise: d.poise || 0, hitSet: new Set(), downT: 0, deadT: 0, armor: false, rate: 1, retreat: 0, atk: null, boss: !!d.boss, summoned: false, grabT: 0 };
+    return { kind: 'fighter', team: 'e', uid: (G._uid = (G._uid || 0) + 1), type, def: d, kitId: d.kit, x, y, z: 0, vx: 0, vy: 0, vz: 0, face: x > 0 ? -1 : 1, hp, maxhp: hp, state: 'spawn', anim: 'walk', frame: 0, ft: 0, phase: 0, hw: (d.hw || 11) * kit.scale, hd: 7, ht: 58 * kit.scale, stride: 40 * kit.scale, runStride: 56 * kit.scale, invuln: 0, flash: 0, hitChain: 0, chainT: 0, cool: 40 + Math.random() * 40, token: false, ring: rnd(72, 118) * GS, laneOff: rnd(-26, 26), poise: d.poise || 0, hitSet: new Set(), downT: 0, deadT: 0, armor: false, rate: 1, retreat: 0, atk: null, boss: !!d.boss, summoned: false, grabT: 0 };
   }
 
   /* ----- main tick ----- */
@@ -156,7 +161,7 @@ class Game {
     const sp = Math.hypot(p.vx, p.vy);
     if (sp > .2) { p.state = 'walk'; setAnim(p, 'walk'); this.walkPhase(p); } else { if (p.state === 'walk') { p.state = 'idle'; setAnim(p, 'idle'); } advance(p, true, 1); }
   }
-  walkPhase(e) { const sp = Math.hypot(e.vx, e.vy), back = Math.abs(e.vx) > Math.abs(e.vy) && e.vx * e.face < 0 ? -1 : 1; e.phase += back * sp / 40; e.phase = ((e.phase % 1) + 1) % 1; e.frame = Math.floor(e.phase * 8) % 8; }
+  walkPhase(e) { const sp = Math.hypot(e.vx, e.vy), back = Math.abs(e.vx) > Math.abs(e.vy) && e.vx * e.face < 0 ? -1 : 1; e.phase += back * sp / e.stride; e.phase = ((e.phase % 1) + 1) % 1; e.frame = Math.floor(e.phase * 8) % 8; }
   startAttack(p, step) {
     p.state = 'attack'; p.step = step; p.hitSet = new Set(); p.swung = false; p.lunged = false; p.vx *= .2; p.vy *= .2; restartAnim(p, ['a1', 'a2', 'a3'][step]);
   }
@@ -186,7 +191,7 @@ class Game {
   }
   tryGrab(p) {
     let best = null, bd = 1e9;
-    this.enemies.forEach(e => { if (!this.grabbable(e)) return; const dx = (e.x - p.x) * p.face; if (dx < -6 || dx > 28 || Math.abs(e.y - p.y) > 10) return; if (dx < bd) { bd = dx; best = e; } });
+    this.enemies.forEach(e => { if (!this.grabbable(e)) return; const dx = (e.x - p.x) * p.face; if (dx < -6 * GS || dx > 28 * GS || Math.abs(e.y - p.y) > 10) return; if (dx < bd) { bd = dx; best = e; } });
     if (!best) return;
     p.state = 'grab'; p.held = best; p.grabT = 0; p.gcount = 0; restartAnim(p, 'grab'); p.vx = p.vy = 0;
     best.state = 'held'; best.heldBy = p; best.grabT = 0; best.atk = null; best.armor = false; best.warn = false; A.play('hit');
@@ -196,7 +201,7 @@ class Game {
   playerGrab(p, ax, ay) {
     const e = p.held;
     if (!e || e.state !== 'held') { p.held = null; p.state = 'idle'; setAnim(p, 'idle'); return; }
-    e.x += (p.x + p.face * 17 - e.x) * .5; e.y += (p.y - e.y) * .5; e.face = -p.face; e.grabT++; p.grabT++;
+    e.x += (p.x + p.face * 17 * GS - e.x) * .5; e.y += (p.y - e.y) * .5; e.face = -p.face; e.grabT++; p.grabT++;
     if (e.grabT > (e.def.grabEscape || 140)) { this.release(p); p.state = 'idle'; setAnim(p, 'idle'); p.invuln = 10; return; }
     if (p.state === 'grab') {
       advance(p, true, 1);
@@ -208,7 +213,7 @@ class Game {
       if (p.done) { p.state = p.held ? 'grab' : 'idle'; restartAnim(p, p.held ? 'grab' : 'idle'); }
     } else if (p.state === 'throw') {
       advance(p, false, 1);
-      if (p.frame === 1 && !p.thrown) { p.thrown = true; e.x = p.x + p.face * 14; e.face = -p.face; e.heldBy = null; p.held = null; this.hurt(e, p, Object.assign({}, THROWMV)); e.vx = p.face * 3.6; e.vz = 3.4; e.thrown = true; e.thrownHit = new Set([e]); e.owner = p; A.play('throw'); }
+      if (p.frame === 1 && !p.thrown) { p.thrown = true; e.x = p.x + p.face * 14 * GS; e.face = -p.face; e.heldBy = null; p.held = null; this.hurt(e, p, Object.assign({}, THROWMV)); e.vx = p.face * 3.6; e.vz = 3.4; e.thrown = true; e.thrownHit = new Set([e]); e.owner = p; A.play('throw'); }
       if (p.done) { p.state = 'idle'; setAnim(p, 'idle'); }
     }
   }
@@ -218,7 +223,7 @@ class Game {
     e.vz -= GRAV; e.z += e.vz; e.x += e.vx; e.y = clamp(e.y + (e.vy || 0), FT, FB); e.vx *= .985;
     if (e.team === 'p') e.x = clamp(e.x, this.cam.x + 6, this.cam.x + GW - 6);
     e.anim = 'knock'; e.frame = (e.vz > 0 || e.z > 16) ? 0 : 1;
-    if (e.thrown) this.strike(e, { x0: -14, x1: 14, d: 10, z0: 0, z1: 44 }, Object.assign({ owner: e.owner }, THROWHIT), e.thrownHit);
+    if (e.thrown) this.strike(e, { x0: -14 * GS, x1: 14 * GS, d: 10, z0: 0, z1: 44 * GS }, Object.assign({ owner: e.owner }, THROWHIT), e.thrownHit);
     if (e.z <= 0 && e.vz < 0) { e.z = 0; e.vz = 0; e.vx *= .4; e.thrown = false; e.state = 'down'; e.downT = 0; restartAnim(e, 'down'); this.dust(e.x, e.y, 3); this.shake = Math.max(this.shake, 2.5); A.play('land'); if (e.hp <= 0) { e.state = 'dead'; e.deadT = 0; restartAnim(e, 'dead'); } }
   }
   downStep(e, wait) { e.downT++; e.x += e.vx; e.vx *= .85; if (e.team === 'p') e.x = clamp(e.x, this.cam.x + 6, this.cam.x + GW - 6); e.anim = 'down'; e.frame = e.downT < 10 ? 0 : 1; if (e.downT > wait) { e.state = 'getup'; restartAnim(e, 'getup'); e.invuln = 36; } }
@@ -301,6 +306,8 @@ class Game {
     const grunts = this.enemies.filter(e => !e.boss && !e.remove && !['dead', 'down', 'knock', 'spawn', 'held', 'getup'].includes(e.state));
     const busy = (e) => e.state === 'attack' || e.state === 'charge';
     grunts.forEach(e => { if (!busy(e)) e.token = false; });
+    const byId = grunts.slice().sort((a, b) => a.uid - b.uid); /* spread idle enemies over distinct lanes/rings so crowds fan out instead of stacking */
+    byId.forEach((e, i) => { const n = byId.length; e.laneOff = n > 1 ? ((i + .5) / n - .5) * 64 : e.laneOff; e.ring = (70 + (i % 3) * 20) * GS; });
     const free = this.stage.tokens - grunts.filter(busy).length;
     grunts.filter(e => !busy(e)).sort((a, b) => Math.abs(a.x - pl.x) - Math.abs(b.x - pl.x)).slice(0, Math.max(0, free)).forEach(e => e.token = true);
   }
@@ -311,12 +318,12 @@ class Game {
     const moveToLane = (ty, k) => { const d = ty - e.y; tvy = clamp(d * .2, -spd * .8, spd * .8) * (Math.abs(d) < 2 ? 0 : 1) * (k || 1); };
     if (e.state === 'retreat' || e.retreat > 0) { e.state = 'retreat'; e.retreat--; tvx = -e.face * spd * .9; moveToLane(p.y + e.laneOff * .5); if (e.retreat <= 0) e.state = 'idle'; }
     else if (e.token || e.boss) {
-      if (e.cool > 0) { const ring = e.boss ? 66 : 62; if (adx > ring + 8) tvx = e.face * spd * .7; else if (adx < ring - 14) tvx = -e.face * spd * .6; moveToLane(p.y + e.laneOff * .3, .7); }
+      if (e.cool > 0) { const ring = (e.boss ? 66 : 62) * GS; if (adx > ring + 8) tvx = e.face * spd * .7; else if (adx < ring - 14) tvx = -e.face * spd * .6; moveToLane(p.y + e.laneOff * .3, .7); }
       else {
         if (!e.next) e.next = D.moves[Math.floor(Math.random() * D.moves.length)];
         const mv = EM[e.next];
-        if (mv.kind === 'ranged') { if (adx >= 70 && adx <= 170 && ady < 8) { this.startEnemyAttack(e, e.next); return; } if (adx < 70) tvx = -e.face * spd; else if (adx > 170) tvx = e.face * spd; moveToLane(p.y); }
-        else if (mv.kind === 'charge') { if (adx >= 80 && adx <= 230 && ady < 8) { this.startEnemyAttack(e, e.next); return; } if (adx < 80) tvx = -e.face * spd; else tvx = e.face * spd * .8; moveToLane(p.y); }
+        if (mv.kind === 'ranged') { if (adx >= 70 * GS && adx <= 170 * GS && ady < 8) { this.startEnemyAttack(e, e.next); return; } if (adx < 70 * GS) tvx = -e.face * spd; else if (adx > 170 * GS) tvx = e.face * spd; moveToLane(p.y); }
+        else if (mv.kind === 'charge') { if (adx >= 80 * GS && adx <= 230 * GS && ady < 8) { this.startEnemyAttack(e, e.next); return; } if (adx < 80 * GS) tvx = -e.face * spd; else tvx = e.face * spd * .8; moveToLane(p.y); }
         else if (mv.kind === 'summon') { this.startEnemyAttack(e, e.next); return; }
         else { if (adx <= mv.engage && ady <= 6) { this.startEnemyAttack(e, e.next); return; } if (adx > mv.engage - 4) tvx = e.face * spd; moveToLane(p.y); }
       }
@@ -348,13 +355,13 @@ class Game {
     if (e.def.retreat) { e.retreat = 36; e.state = 'retreat'; }
   }
   aiCharge(e) {
-    const mv = e.atk.mv; e.ct++; e.x += e.face * mv.speed; setAnim(e, 'run'); e.phase += mv.speed / 56; e.phase %= 1; e.frame = Math.floor(e.phase * 6) % 6;
+    const mv = e.atk.mv; e.ct++; e.x += e.face * mv.speed; setAnim(e, 'run'); e.phase += mv.speed / e.runStride; e.phase %= 1; e.frame = Math.floor(e.phase * 6) % 6;
     const hit = this.strike(e, mv.box, mv, e.hitSet);
     const edge = (e.x < this.cam.x + 10 && e.face < 0) || (e.x > this.cam.x + GW - 10 && e.face > 0);
     if (e.ct > mv.dur || hit || edge) { e.atk = null; e.armor = false; e.state = 'tired'; e.tiredT = hit ? 20 : 44; e.cool = mv.cool; e.vx = 0; }
   }
   doSummon(e) { A.play('go'); [['guard', -1], ['exec', 1]].forEach(q => { const n = this.makeEnemy(q[0], q[1] < 0 ? this.cam.x - 24 : this.cam.x + GW + 24, rnd(FT + 6, FB - 6)); n.face = q[1] < 0 ? 1 : -1; this.enemies.push(n); }); this.flashT = 6; }
-  fireProj(e, mv) { A.play('throw'); for (let i = 0; i < mv.count; i++) this.projs.push({ x: e.x + e.face * 18, y: e.y + (i - (mv.count - 1) / 2) * 12, z: 32 + e.z, vx: e.face * 2.4, life: 160, dmg: mv.dmg, owner: e, spin: 0 }); }
+  fireProj(e, mv) { A.play('throw'); for (let i = 0; i < mv.count; i++) this.projs.push({ x: e.x + e.face * 18 * GS, y: e.y + (i - (mv.count - 1) / 2) * 12, z: 32 * GS + e.z, vx: e.face * 2.4, life: 160, dmg: mv.dmg, owner: e, spin: 0 }); }
   updateProj(pr) {
     pr.x += pr.vx; pr.life--; pr.spin++; if (pr.x < this.cam.x - 30 || pr.x > this.cam.x + GW + 30) pr.life = 0;
     for (const p of this.players) { if (!this.canBeHit(p, {})) continue; if (Math.abs(p.x - pr.x) < p.hw + 4 && Math.abs(p.y - pr.y) < 9 && pr.z > p.z && pr.z < p.z + p.ht) { pr.life = 0; this.hurt(p, { x: pr.x - Math.sign(pr.vx) * 20, face: Math.sign(pr.vx), z: 0, team: 'e' }, { dmg: pr.dmg, kb: 1.5, stun: 16, hs: 3, box: { z0: 20, z1: 40 } }); } }

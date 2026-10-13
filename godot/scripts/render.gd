@@ -2,9 +2,9 @@ extends Node2D
 ## Draws the world (pixel-snapped, feet anchored at the sprite's (56,100)) and the UI. Mirrors src/ui.js.
 
 var game
-const CELL := 112
-const AX := 56
-const AY := 100
+var CELL := 144
+var AX := 72
+var AY := 128
 const GW := 384
 const GH := 216
 const GOLD := Color("f2b630")
@@ -30,6 +30,9 @@ func _ready() -> void:
   texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
   font = ThemeDB.fallback_font
   var D = game.D
+  CELL = int(D.cell)
+  AX = int(D.anchor[0])
+  AY = int(D.anchor[1])
   for id in D.players + D.enemies:
     sheets[id] = _tex("assets/sprites/%s.png" % id)
     portraits[id] = _tex("assets/sprites/%s_portrait.png" % id)
@@ -255,49 +258,46 @@ func ui_title() -> void:
   txt("Godot port - playtest build", GW / 2.0, 214, 4, DIM, 1)
 
 func ui_select() -> void:
-  txt("CHOOSE YOUR FIGHTER", GW / 2.0, 20, 13, GOLD, 1)
+  txt("CHOOSE YOUR FIGHTER", GW / 2.0, 13, 11, GOLD, 1)
   var ids: Array = game.D.players
   for i in 3:
     var d: Dictionary = game.D.CH[ids[i]]
     var cx: float = GW / 2.0 + (i - 1) * 124.0
     var x := cx - 56.0
-    var y := 28.0
+    var y := 17.0
     var sl: bool = i == game.sel
-    box(x, y, 112, 176, Color("2a1238") if sl else Color("1a0d26"), GOLD if sl else Color("4a3a5a"), 2 if sl else 1)
+    box(x, y, 112, 190, Color("2a1238") if sl else Color("1a0d26"), GOLD if sl else Color("4a3a5a"), 2 if sl else 1)
     var a: Dictionary = game.D.atlas[d.kit].idle
     var fr: int = (game.t / 14) % 4 if sl else 0
-    draw_texture_rect_region(sheets[d.kit], Rect2(cx - 40, y + 4, 80, 82), Rect2(fr * CELL + AX - 40, int(a.row) * CELL + AY - 78, 80, 82), Color(1, 1, 1, 1.0 if sl else 0.6))
-    txt(d.name, cx, y + 98, 11, GOLD2 if sl else CREAM, 1)
-    txt(d.weapon, cx, y + 107, 6, DIM, 1)
-    txt("SPECIAL", x + 8, y + 120, 6, MAG)
-    txt(d.special, x + 46, y + 120, 6, CREAM)
+    draw_texture_rect_region(sheets[d.kit], Rect2(cx - 52, y + 3, 104, 104), Rect2(fr * CELL + AX - 52, int(a.row) * CELL + AY - 100, 104, 104), Color(1, 1, 1, 1.0 if sl else 0.6))
+    txt(d.name, cx, y + 121, 11, GOLD2 if sl else CREAM, 1)
+    txt(d.weapon, cx, y + 130, 6, DIM, 1)
+    txt("SPECIAL", x + 8, y + 142, 6, MAG)
+    txt(d.special, x + 46, y + 142, 6, CREAM)
     var k := 0
     for lab in ["power", "speed", "reach", "health"]:
-      txt(lab.to_upper(), x + 8, y + 133 + k * 9, 6, CREAM)
+      txt(lab.to_upper(), x + 8, y + 154 + k * 9, 6, CREAM)
       for j in 5:
-        draw_rect(Rect2(x + 60 + j * 9, y + 127.4 + k * 9, 7.4, 6), GOLD if j < int(d.stats[lab]) else Color("3a2a4a"))
+        draw_rect(Rect2(x + 60 + j * 9, y + 148.4 + k * 9, 7.4, 6), GOLD if j < int(d.stats[lab]) else Color("3a2a4a"))
       k += 1
-    var bl: PackedStringArray = String(d.blurb).split("|")
-    for m in bl.size():
-      txt(bl[m], cx, y + 169 + m * 5.6, 5, DIM, 1)
-  txt("LEFT / RIGHT choose     ENTER fight     ESC back", GW / 2.0, 212, 6, CREAM, 1)
+  txt(String(game.D.CH[ids[game.sel]].blurb).replace("|", " "), GW / 2.0, 214, 6, CREAM, 1)
 
 func ui_hud() -> void:
   if game.players.is_empty():
     return
   var p: Dictionary = game.players[0]
   var d: Dictionary = p.def
-  box(6, 6, 36, 36, INK, GOLD, 2)
-  draw_texture_rect(portraits[d.kit], Rect2(8, 8, 32, 32), false)
-  txt(d.name, 48, 15, 9, GOLD2)
-  txt("x%d" % maxi(0, game.lives), 150, 15, 9, CREAM, 2)
-  txt("HP", 48, 26, 6, CREAM)
+  box(6, 6, 44, 44, INK, GOLD, 2)
+  draw_texture_rect(portraits[d.kit], Rect2(8, 8, 40, 40), false)
+  txt(d.name, 56, 15, 9, GOLD2)
+  txt("x%d" % maxi(0, game.lives), 156, 15, 9, CREAM, 2)
+  txt("HP", 56, 27, 6, CREAM)
   var low: bool = p.hp / p.maxhp < 0.3 and ((game.t >> 3) & 1) == 1
-  bar(72, 19.5, 78, 8, p.hp / p.maxhp, Color("ff7a5a") if low else Color("e0322e"), Color("3a1420"))
-  txt("HYPE", 48, 36, 6, MAG)
-  bar(72, 31, 78, 6, p.hype / 100.0, GOLD2 if p.state == "special" else GOLD, Color("33210a"))
-  txt("%06d" % game.score, GW / 2.0, 16, 13, CREAM, 1)
-  txt("SCORE", GW / 2.0, 24, 5, DIM, 1)
+  bar(80, 20.5, 76, 8, p.hp / p.maxhp, Color("ff7a5a") if low else Color("e0322e"), Color("3a1420"))
+  txt("HYPE", 56, 38, 6, MAG)
+  bar(80, 32.5, 76, 6, p.hype / 100.0, GOLD2 if p.state == "special" else GOLD, Color("33210a"))
+  txt("%06d" % game.score, GW / 2.0 + 20, 16, 13, CREAM, 1)
+  txt("SCORE", GW / 2.0 + 20, 24, 5, DIM, 1)
   if game.last_enemy_t > 0 and game.last_enemy != null and not game.last_enemy.boss:
     var e = game.last_enemy
     txt(e.def.name, GW - 8, 15, 7, CREAM, 2)
@@ -309,7 +309,7 @@ func ui_hud() -> void:
       break
   if game.combo.n >= 2 and game.combo.t > 0:
     game.combo.pop = maxf(0.0, game.combo.pop - 0.5)
-    txt("%d HITS" % game.combo.n, 8, 58, 10 + int(game.combo.pop * 0.6), GOLD2 if game.combo.n >= 8 else CREAM)
+    txt("%d HITS" % game.combo.n, 8, 66, 10 + int(game.combo.pop * 0.6), GOLD2 if game.combo.n >= 8 else CREAM)
   if game.state == "play":
     if game.banner > 0:
       var al: float = clampf(minf(game.banner / 20.0, (170 - game.banner) / 12.0 + 0.2), 0.0, 1.0)

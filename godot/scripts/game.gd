@@ -10,6 +10,7 @@ const BUF := 9
 const BTN := ["left", "right", "up", "down", "attack", "jump", "special", "grab", "pause", "start", "back"]
 
 var D: Dictionary
+var GS := 1.3
 var TIMING: Dictionary
 var use_real_input := true
 var held := {}
@@ -68,6 +69,7 @@ func _ready() -> void:
   var f := FileAccess.open("res://data/game_data.json", FileAccess.READ)
   D = JSON.parse_string(f.get_as_text())
   TIMING = D.TIMING
+  GS = float(D.GS)
   for b in BTN:
     held[b] = false
     buf[b] = 0
@@ -316,7 +318,7 @@ func make_player(id: String) -> Dictionary:
   var d: Dictionary = D.CH[id]
   var sc: float = D.kits[d.kit].scale
   return {"id": _id(), "kind": "fighter", "team": "p", "cid": id, "def": d, "kitId": d.kit, "x": 70.0, "y": 172.0, "z": 0.0, "vx": 0.0, "vy": 0.0, "vz": 0.0, "face": 1,
-    "hp": float(d.hp), "maxhp": float(d.hp), "hype": 30.0, "state": "idle", "anim": "idle", "frame": 0, "ft": 0.0, "phase": 0.0, "hw": 11.0 * sc, "hd": 7.0, "ht": 56.0 * sc,
+    "hp": float(d.hp), "maxhp": float(d.hp), "hype": 30.0, "state": "idle", "anim": "idle", "frame": 0, "ft": 0.0, "phase": 0.0, "hw": 11.0 * sc, "hd": 7.0, "ht": 56.0 * sc, "stride": 40.0 * sc, "runStride": 56.0 * sc,
     "invuln": 90, "flash": 0, "hitChain": 0, "chainT": 0, "comboTimer": 0, "nextStep": 0, "step": 0, "hitSet": [], "rate": float(d.rate), "spT": 0, "pulses": 0,
     "held": null, "grabT": 0, "gcount": 0, "downT": 0, "deadT": 0, "done": false, "stun": 0, "swung": false, "lunged": false, "struck": false, "thrown": false, "heldBy": null,
     "armor": false, "warn": false, "t": 0, "lives": 3, "remove": false}
@@ -326,8 +328,8 @@ func make_enemy(type: String, x: float, y: float) -> Dictionary:
   var sc: float = D.kits[d.kit].scale
   var hw: float = d.get("hw", 11.0)
   return {"id": _id(), "kind": "fighter", "team": "e", "type": type, "def": d, "kitId": d.kit, "x": x, "y": y, "z": 0.0, "vx": 0.0, "vy": 0.0, "vz": 0.0, "face": -1,
-    "hp": float(d.hp), "maxhp": float(d.hp), "state": "spawn", "anim": "walk", "frame": 0, "ft": 0.0, "phase": 0.0, "hw": hw * sc, "hd": 7.0, "ht": 58.0 * sc,
-    "invuln": 0, "flash": 0, "hitChain": 0, "chainT": 0, "cool": 40.0 + randf() * 40.0, "token": false, "ring": rnd(72, 118), "laneOff": rnd(-26, 26),
+    "hp": float(d.hp), "maxhp": float(d.hp), "state": "spawn", "anim": "walk", "frame": 0, "ft": 0.0, "phase": 0.0, "hw": hw * sc, "hd": 7.0, "ht": 58.0 * sc, "stride": 40.0 * sc, "runStride": 56.0 * sc,
+    "invuln": 0, "flash": 0, "hitChain": 0, "chainT": 0, "cool": 40.0 + randf() * 40.0, "token": false, "ring": rnd(72, 118) * GS, "laneOff": rnd(-26, 26),
     "poise": float(d.get("poise", 0)), "hitSet": [], "downT": 0, "deadT": 0, "armor": false, "rate": 1.0, "retreat": 0, "atk": null, "boss": d.get("boss", false),
     "summoned": false, "grabT": 0, "done": false, "stun": 0, "next": "", "windScale": 1.0, "warn": false, "heldBy": null, "thrown": false, "tiredT": 0, "ct": 0, "remove": false, "owner": null, "thrownHit": []}
 
@@ -500,7 +502,7 @@ func player_ground(p: Dictionary, ax: int, ay: int) -> void:
 func walk_phase(e: Dictionary) -> void:
   var sp := Vector2(e.vx, e.vy).length()
   var back := -1 if (absf(e.vx) > absf(e.vy) and e.vx * e.face < 0.0) else 1
-  e.phase += back * sp / 40.0
+  e.phase += back * sp / float(e.stride)
   e.phase = fposmod(e.phase, 1.0)
   e.frame = floori(e.phase * 8.0) % 8
 
@@ -603,7 +605,7 @@ func try_grab(p: Dictionary) -> void:
     if not grabbable(e):
       continue
     var dx: float = (e.x - p.x) * p.face
-    if dx < -6.0 or dx > 28.0 or absf(e.y - p.y) > 10.0:
+    if dx < -6.0 * GS or dx > 28.0 * GS or absf(e.y - p.y) > 10.0:
       continue
     if dx < bd:
       bd = dx
@@ -649,7 +651,7 @@ func player_grab(p: Dictionary, ax: int, _ay: int) -> void:
     p.state = "idle"
     set_anim(p, "idle")
     return
-  e.x += (p.x + p.face * 17.0 - e.x) * 0.5
+  e.x += (p.x + p.face * 17.0 * GS - e.x) * 0.5
   e.y += (p.y - e.y) * 0.5
   e.face = -p.face
   e.grabT += 1
@@ -690,7 +692,7 @@ func player_grab(p: Dictionary, ax: int, _ay: int) -> void:
     advance(p, false, 1.0)
     if p.frame == 1 and not p.thrown:
       p.thrown = true
-      e.x = p.x + p.face * 14.0
+      e.x = p.x + p.face * 14.0 * GS
       e.face = -p.face
       e.heldBy = null
       p.held = null
@@ -719,7 +721,7 @@ func knock_step(e: Dictionary) -> void:
   if e.thrown:
     var mv: Dictionary = D.MV.THROWHIT.duplicate()
     mv["owner"] = e.owner
-    strike(e, {"x0": -14.0, "x1": 14.0, "d": 10.0, "z0": 0.0, "z1": 44.0}, mv, e.thrownHit)
+    strike(e, {"x0": -14.0 * GS, "x1": 14.0 * GS, "d": 10.0, "z0": 0.0, "z1": 44.0 * GS}, mv, e.thrownHit)
   if e.z <= 0.0 and e.vz < 0.0:
     e.z = 0.0
     e.vz = 0.0
@@ -1004,6 +1006,13 @@ func update_tokens() -> void:
   for e in grunts:
     if not busy.call(e):
       e.token = false
+  var by_id: Array = grunts.duplicate()
+  by_id.sort_custom(func(a, b): return a.id < b.id)
+  for i in by_id.size():
+    var n: int = by_id.size()
+    if n > 1:
+      by_id[i].laneOff = ((i + 0.5) / n - 0.5) * 64.0
+    by_id[i].ring = (70.0 + (i % 3) * 20.0) * GS
   var nbusy := 0
   for e in grunts:
     if busy.call(e):
@@ -1042,7 +1051,7 @@ func ai_think(e: Dictionary) -> void:
       e.state = "idle"
   elif e.token or e.boss:
     if e.cool > 0.0:
-      var ring := 66.0 if e.boss else 62.0
+      var ring := (66.0 if e.boss else 62.0) * GS
       if adx > ring + 8.0:
         tvx = e.face * spd * 0.7
       elif adx < ring - 14.0:
@@ -1054,19 +1063,19 @@ func ai_think(e: Dictionary) -> void:
       var mv: Dictionary = D.EM[e.next]
       var kind: String = mv.get("kind", "melee")
       if kind == "ranged":
-        if adx >= 70.0 and adx <= 170.0 and ady < 8.0:
+        if adx >= 70.0 * GS and adx <= 170.0 * GS and ady < 8.0:
           start_enemy_attack(e, e.next)
           return
-        if adx < 70.0:
+        if adx < 70.0 * GS:
           tvx = -e.face * spd
-        elif adx > 170.0:
+        elif adx > 170.0 * GS:
           tvx = e.face * spd
         tvy = lane.call(p.y)
       elif kind == "charge":
-        if adx >= 80.0 and adx <= 230.0 and ady < 8.0:
+        if adx >= 80.0 * GS and adx <= 230.0 * GS and ady < 8.0:
           start_enemy_attack(e, e.next)
           return
-        if adx < 80.0:
+        if adx < 80.0 * GS:
           tvx = -e.face * spd
         else:
           tvx = e.face * spd * 0.8
@@ -1189,7 +1198,7 @@ func ai_charge(e: Dictionary) -> void:
   e.ct += 1
   e.x += e.face * float(mv.speed)
   set_anim(e, "run")
-  e.phase += float(mv.speed) / 56.0
+  e.phase += float(mv.speed) / float(e.runStride)
   e.phase = fposmod(e.phase, 1.0)
   e.frame = floori(e.phase * 6.0) % 6
   var hit := strike(e, mv.box, mv, e.hitSet)
@@ -1214,7 +1223,7 @@ func fire_proj(e: Dictionary, mv: Dictionary) -> void:
   play("throw")
   var cnt := int(mv.count)
   for i in cnt:
-    projs.append({"x": e.x + e.face * 18.0, "y": e.y + (i - (cnt - 1) / 2.0) * 12.0, "z": 32.0 + e.z, "vx": e.face * 2.4, "life": 160, "dmg": float(mv.dmg), "spin": 0})
+    projs.append({"x": e.x + e.face * 18.0 * GS, "y": e.y + (i - (cnt - 1) / 2.0) * 12.0, "z": 32.0 * GS + e.z, "vx": e.face * 2.4, "life": 160, "dmg": float(mv.dmg), "spin": 0})
 
 func update_proj(pr: Dictionary) -> void:
   pr.x += pr.vx

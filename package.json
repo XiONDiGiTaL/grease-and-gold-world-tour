@@ -7,13 +7,15 @@
     "build": "node tools/build.js",
     "test": "node tests/run.js",
     "sprites": "node tools/export_sprites.js",
-    "godot-data": "node tools/export_godot_data.js"
+    "godot-data": "node tools/export_godot_data.js",
+    "test:html": "node tools/run_html.js play-v10.html shots_html"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@napi-rs/canvas": "^1.0.11"
+    "@napi-rs/canvas": "^1.0.11",
+    "jsdom": "^30.1.2"
   },
   "playVersion": 10
 }
