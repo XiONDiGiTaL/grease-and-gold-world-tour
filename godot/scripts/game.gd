@@ -318,7 +318,7 @@ func make_player(id: String) -> Dictionary:
   var d: Dictionary = D.CH[id]
   var sc: float = D.kits[d.kit].scale
   return {"id": _id(), "kind": "fighter", "team": "p", "cid": id, "def": d, "kitId": d.kit, "x": 70.0, "y": 172.0, "z": 0.0, "vx": 0.0, "vy": 0.0, "vz": 0.0, "face": 1,
-    "hp": float(d.hp), "maxhp": float(d.hp), "hype": 30.0, "state": "idle", "anim": "idle", "frame": 0, "ft": 0.0, "phase": 0.0, "hw": 11.0 * sc, "hd": 7.0, "ht": 56.0 * sc, "stride": 40.0 * sc, "runStride": 56.0 * sc,
+    "hp": float(d.hp), "maxhp": float(d.hp), "hype": 30.0, "state": "idle", "anim": "idle", "frame": 0, "ft": 0.0, "phase": 0.0, "hw": 11.0 * sc, "hd": 7.0, "ht": 56.0 * sc, "stride": float(D.kits[d.kit].get("strideMul", 40)) * sc, "runStride": 56.0 * sc,
     "invuln": 90, "flash": 0, "hitChain": 0, "chainT": 0, "comboTimer": 0, "nextStep": 0, "step": 0, "hitSet": [], "rate": float(d.rate), "spT": 0, "pulses": 0,
     "held": null, "grabT": 0, "gcount": 0, "downT": 0, "deadT": 0, "done": false, "stun": 0, "swung": false, "lunged": false, "struck": false, "thrown": false, "heldBy": null,
     "armor": false, "warn": false, "t": 0, "lives": 3, "remove": false}
@@ -328,7 +328,7 @@ func make_enemy(type: String, x: float, y: float) -> Dictionary:
   var sc: float = D.kits[d.kit].scale
   var hw: float = d.get("hw", 11.0)
   return {"id": _id(), "kind": "fighter", "team": "e", "type": type, "def": d, "kitId": d.kit, "x": x, "y": y, "z": 0.0, "vx": 0.0, "vy": 0.0, "vz": 0.0, "face": -1,
-    "hp": float(d.hp), "maxhp": float(d.hp), "state": "spawn", "anim": "walk", "frame": 0, "ft": 0.0, "phase": 0.0, "hw": hw * sc, "hd": 7.0, "ht": 58.0 * sc, "stride": 40.0 * sc, "runStride": 56.0 * sc,
+    "hp": float(d.hp), "maxhp": float(d.hp), "state": "spawn", "anim": "walk", "frame": 0, "ft": 0.0, "phase": 0.0, "hw": hw * sc, "hd": 7.0, "ht": 58.0 * sc, "stride": float(D.kits[d.kit].get("strideMul", 40)) * sc, "runStride": 56.0 * sc,
     "invuln": 0, "flash": 0, "hitChain": 0, "chainT": 0, "cool": 40.0 + randf() * 40.0, "token": false, "ring": rnd(72, 118) * GS, "laneOff": rnd(-26, 26),
     "poise": float(d.get("poise", 0)), "hitSet": [], "downT": 0, "deadT": 0, "armor": false, "rate": 1.0, "retreat": 0, "atk": null, "boss": d.get("boss", false),
     "summoned": false, "grabT": 0, "done": false, "stun": 0, "next": "", "windScale": 1.0, "warn": false, "heldBy": null, "thrown": false, "tiredT": 0, "ct": 0, "remove": false, "owner": null, "thrownHit": []}

@@ -1,6 +1,6 @@
 // Renders every kit to assets/sprites/<id>.png (one animation per row) + <id>.json atlas, plus props/food/fx.
 const fs = require('fs'), path = require('path'); const { createCanvas } = require('@napi-rs/canvas');
-require('../src/foodart.js'); require('../src/rigart.js'); require('../src/sprites.js'); require('../src/rig.js'); const S = globalThis.GG.Sprites, mk = (w, h) => createCanvas(w, h);
+require('../src/foodart.js'); require('../src/rigart.js'); require('../src/sprites.js'); require('../src/rig.js'); require('../src/enemyart.js'); require('../src/sheetkit.js'); const S = globalThis.GG.Sprites, mk = (w, h) => createCanvas(w, h);
 const out = path.join(__dirname, '..', 'assets', 'sprites'); fs.mkdirSync(out, { recursive: true });
 const save = (cv, name) => fs.writeFileSync(path.join(out, name), cv.toBuffer('image/png'));
 const ids = [...S.PLAYERS.map(i => [i, true]), ...S.ENEMIES.map(i => [i, false])];

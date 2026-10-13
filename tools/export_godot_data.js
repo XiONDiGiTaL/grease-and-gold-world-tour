@@ -1,10 +1,10 @@
 // Exports the single source of truth (tables, atlases, backdrops, fx) for the Godot port.
 const fs = require('fs'), path = require('path'); const { createCanvas } = require('@napi-rs/canvas');
-['foodart', 'rigart', 'sprites', 'rig', 'input', 'audio', 'stages', 'game'].forEach(n => require('../src/' + n + '.js'));
+['foodart', 'rigart', 'sprites', 'rig', 'enemyart', 'sheetkit', 'input', 'audio', 'stages', 'game'].forEach(n => require('../src/' + n + '.js'));
 const G = globalThis.GG, S = G.Sprites; G.makeCanvas = (w, h) => createCanvas(w, h);
 const root = path.join(__dirname, '..', 'godot'); const mk = (w, h) => createCanvas(w, h);
 const atlas = {}; [...S.PLAYERS, ...S.ENEMIES].forEach(id => { const j = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'assets', 'sprites', id + '.json'))); atlas[id] = j.anims; fs.copyFileSync(path.join(__dirname, '..', 'assets', 'sprites', id + '.png'), path.join(root, 'assets', 'sprites', id + '.png')); fs.copyFileSync(path.join(__dirname, '..', 'assets', 'sprites', id + '_portrait.png'), path.join(root, 'assets', 'sprites', id + '_portrait.png')); });
-const kits = {}; Object.keys(S.K).forEach(k => kits[k] = { scale: S.K[k].scale, name: S.K[k].name });
+const kits = {}; Object.keys(S.K).forEach(k => kits[k] = { scale: S.K[k].scale, name: S.K[k].name, strideMul: S.K[k].strideMul || 40 });
 const data = { GS: S.GS, cell: S.CELL, anchor: [S.AX, S.AY], const: G.CONST, CH: G.CH, ED: G.ED, EM: G.EM, FOOD: G.FOOD, MV: G.MV, STAGES: G.STAGES, TIMING: S.TIMING, atlas, kits, players: S.PLAYERS, enemies: S.ENEMIES, help: null };
 fs.writeFileSync(path.join(root, 'data', 'game_data.json'), JSON.stringify(data));
 const save = (b, p) => fs.writeFileSync(path.join(root, 'assets', p), b.toCanvas(mk).toBuffer('image/png'));

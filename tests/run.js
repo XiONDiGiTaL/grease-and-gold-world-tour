@@ -1,6 +1,6 @@
 // node tests/run.js  - headless checks (no browser). Prints PASS/FAIL per rule.
 const path = require('path'); const { createCanvas } = require('@napi-rs/canvas');
-['foodart', 'rigart', 'sprites', 'rig', 'input', 'audio', 'stages', 'game'].forEach(n => require('../src/' + n + '.js'));
+['foodart', 'rigart', 'sprites', 'rig', 'enemyart', 'sheetkit', 'input', 'audio', 'stages', 'game'].forEach(n => require('../src/' + n + '.js'));
 const G = globalThis.GG; G.makeCanvas = (w, h) => createCanvas(w, h); const S = G.Sprites, I = G.Input;
 let pass = 0, fail = 0; const failures = [];
 const ok = (cond, name, info) => { if (cond) { pass++; console.log('PASS', name); } else { fail++; failures.push(name); console.log('FAIL', name, info !== undefined ? '-> ' + JSON.stringify(info) : ''); } };
@@ -8,7 +8,7 @@ const section = (s) => console.log('\n== ' + s);
 
 /* ---------------- sprites ---------------- */
 section('Sprite sheets');
-const kits = [...S.PLAYERS.map(i => [i, true]), ...S.ENEMIES.map(i => [i, false])]; const R = {};
+const kits = [...S.PLAYERS.map(i => [i, true]), ...S.ENEMIES.map(i => [i, false])]; const R = {}; const rigKits = kits.filter(([id]) => !S.K[id].sheet);
 kits.forEach(([id, p]) => R[id] = S.renderKit(id, p));
 ok(kits.length === 12, '12 kits rendered (3 players + 9 enemies/bosses)');
 let bad = [];
@@ -18,7 +18,7 @@ bad = [];
 kits.forEach(([id]) => Object.entries(R[id].frames).forEach(([a, fs]) => fs.forEach((b, i) => { const bb = b.bbox(); if (bb.x1 < 0 || bb.x0 < 1 || bb.y0 < 1 || bb.x1 > S.CELL - 2 || bb.y1 > S.CELL - 2) bad.push(`${id}:${a}[${i}] bbox ${JSON.stringify(bb)}`); })));
 ok(!bad.length, 'no frame touches or is clipped by the fixed 112x112 canvas edge', bad.slice(0, 6));
 bad = [];
-kits.forEach(([id]) => { const ref = Math.hypot(R[id].rigs.idle[0].sh[0] - R[id].rigs.idle[0].hip[0], R[id].rigs.idle[0].sh[1] - R[id].rigs.idle[0].hip[1]); Object.entries(R[id].rigs).forEach(([a, rs]) => rs.forEach((r, i) => { const torso = Math.hypot(r.sh[0] - r.hip[0], r.sh[1] - r.hip[1]); if (Math.abs(torso - ref) > .01) bad.push(`${id}:${a}[${i}] torso ${torso.toFixed(2)} vs ${ref.toFixed(2)}`); })); });
+rigKits.forEach(([id]) => { const ref = Math.hypot(R[id].rigs.idle[0].sh[0] - R[id].rigs.idle[0].hip[0], R[id].rigs.idle[0].sh[1] - R[id].rigs.idle[0].hip[1]); Object.entries(R[id].rigs).forEach(([a, rs]) => rs.forEach((r, i) => { const torso = Math.hypot(r.sh[0] - r.hip[0], r.sh[1] - r.hip[1]); if (Math.abs(torso - ref) > .01) bad.push(`${id}:${a}[${i}] torso ${torso.toFixed(2)} vs ${ref.toFixed(2)}`); })); });
 ok(!bad.length, 'torso length identical in every frame of a kit (no shrinking during attacks)', bad.slice(0, 6));
 // planted feet: lowest opaque pixel (outline row) must be exactly the anchor row on grounded frames
 bad = [];
@@ -27,11 +27,11 @@ kits.forEach(([id, isP]) => { grounded.forEach(a => { if (!R[id].frames[a]) retu
 ok(!bad.length, 'planted feet sit on the shared ground anchor in all grounded frames (+/-1px outline)', bad.slice(0, 8));
 // walk: stance foot slides backward relative to body (no moonwalk) and cycle has 8 distinct frames
 bad = [];
-kits.forEach(([id]) => { const pz = R[id].poses.walk; for (let i = 0; i < 8; i++) { const a = pz[i], b = pz[(i + 1) % 8]; for (const f of ['fF', 'fB']) if (a[f][1] === 0 && b[f][1] === 0 && !(b[f][0] < a[f][0])) bad.push(`${id} ${f} frame ${i}`); } });
+rigKits.forEach(([id]) => { const pz = R[id].poses.walk; for (let i = 0; i < 8; i++) { const a = pz[i], b = pz[(i + 1) % 8]; for (const f of ['fF', 'fB']) if (a[f][1] === 0 && b[f][1] === 0 && !(b[f][0] < a[f][0])) bad.push(`${id} ${f} frame ${i}`); } });
 ok(!bad.length, 'walk cycle: planted foot always travels backward relative to the body (not walking backwards)', bad.slice(0, 5));
 const sig = (b) => Array.from(b.d).reduce((h, v) => (h * 31 + v) >>> 0, 7);
-ok(kits.every(([id]) => new Set(R[id].frames.walk.map(sig)).size === 8), 'all 8 walk frames are visually distinct (really cycling)');
-ok(kits.every(([id]) => new Set(R[id].frames.idle.map(sig)).size >= 3), 'idle has subtle but real variation (no static single frame)');
+ok(rigKits.every(([id]) => new Set(R[id].frames.walk.map(sig)).size === 8) && kits.every(([id]) => new Set(R[id].frames.walk.map(sig)).size >= 2), 'rigged walk cycles have 8 distinct frames; every enemy walk cycles through >=2 hand-drawn frames');
+ok(rigKits.every(([id]) => new Set(R[id].frames.idle.map(sig)).size >= 3), 'hero idle has subtle but real variation (no static single frame)');
 // idle bob: hip height must not move between idle frames
 ok(kits.every(([id]) => R[id].poses.idle.every(p => p.hip[1] === R[id].poses.idle[0].hip[1])), 'idle has no hip bobbing');
 // specials differ from basic attacks and from each other

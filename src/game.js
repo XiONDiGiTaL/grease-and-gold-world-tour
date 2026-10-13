@@ -44,13 +44,13 @@ const EM = {
 };
 G.EM = EM;
 G.ED = {
-  guard: { kit: 'guard', name: 'Corporate Guard', hp: 34, spd: 1.05, moves: ['baton', 'kick'], score: 100 },
-  exec: { kit: 'exec', name: 'Executive', hp: 30, spd: 1.2, moves: ['punch', 'kick'], score: 120 },
-  heavy: { kit: 'heavy', name: 'Corporate Heavy', hp: 84, spd: .8, moves: ['hook', 'smash'], poise: 26, hw: 15, grabEscape: 100, score: 300 },
-  brawler: { kit: 'brawler', name: 'Street Scrapper', hp: 28, spd: 1.45, moves: ['jab', 'kick'], score: 100 },
-  raider: { kit: 'raider', name: 'Ashfall Raider', hp: 36, spd: 1.25, moves: ['baton', 'throw'], score: 140 },
+  guard: { kit: 'guard', name: 'Juice Suit', hp: 34, spd: 1.05, moves: ['baton', 'kick'], score: 100 },
+  exec: { kit: 'exec', name: 'OJ Suit', hp: 30, spd: 1.2, moves: ['punch', 'kick'], score: 120 },
+  heavy: { kit: 'heavy', name: 'Big Business', hp: 84, spd: .8, moves: ['hook', 'smash'], poise: 26, hw: 15, grabEscape: 100, score: 300 },
+  brawler: { kit: 'brawler', name: 'Street Hobo', hp: 28, spd: 1.45, moves: ['jab', 'kick'], score: 100 },
+  raider: { kit: 'raider', name: 'Poop Hat', hp: 36, spd: 1.25, moves: ['baton', 'throw'], score: 140 },
   ledger: { kit: 'ledger', name: 'The Ledger', hp: 190, spd: 1.2, boss: true, poise: 34, moves: ['punch', 'kick', 'smash', 'charge'], grabEscape: 60, score: 2000 },
-  bigtony: { kit: 'bigtony', name: 'Big Tony', hp: 300, spd: .95, boss: true, poise: 64, hw: 17, moves: ['hook', 'smash', 'charge'], grabEscape: 50, score: 3000 },
+  bigtony: { kit: 'bigtony', name: 'Big Tony', hp: 300, spd: .95, boss: true, poise: 64, hw: 10, moves: ['hook', 'smash', 'charge'], grabEscape: 50, score: 3000 },
   mara: { kit: 'mara', name: 'Dusty Mara', hp: 230, spd: 1.7, boss: true, poise: 34, retreat: true, moves: ['baton', 'baton', 'volley'], grabEscape: 55, score: 3500 },
   auditor: { kit: 'auditor', name: 'The Auditor', hp: 350, spd: 1.35, boss: true, poise: 40, summonAt: .5, moves: ['baton', 'kick', 'smash', 'charge'], grabEscape: 55, score: 6000 }
 };
@@ -91,11 +91,11 @@ class Game {
   }
   makePlayer(id) {
     const def = G.CH[id], kit = S.K[def.kit];
-    return { kind: 'fighter', team: 'p', id, def, kitId: def.kit, x: 70, y: 172, z: 0, vx: 0, vy: 0, vz: 0, face: 1, hp: def.hp, maxhp: def.hp, hype: 30, state: 'idle', anim: 'idle', frame: 0, ft: 0, phase: 0, hw: 11 * kit.scale, hd: 7, ht: 56 * kit.scale, stride: 40 * kit.scale, runStride: 56 * kit.scale, invuln: 90, flash: 0, hitChain: 0, chainT: 0, comboTimer: 0, nextStep: 0, step: 0, hitSet: new Set(), rate: def.rate, spT: 0, pulses: 0, held: null, grabT: 0, gcount: 0, downT: 0, deadT: 0 };
+    return { kind: 'fighter', team: 'p', id, def, kitId: def.kit, x: 70, y: 172, z: 0, vx: 0, vy: 0, vz: 0, face: 1, hp: def.hp, maxhp: def.hp, hype: 30, state: 'idle', anim: 'idle', frame: 0, ft: 0, phase: 0, hw: 11 * kit.scale, hd: 7, ht: 56 * kit.scale, stride: (kit.strideMul || 40) * kit.scale, runStride: 56 * kit.scale, invuln: 90, flash: 0, hitChain: 0, chainT: 0, comboTimer: 0, nextStep: 0, step: 0, hitSet: new Set(), rate: def.rate, spT: 0, pulses: 0, held: null, grabT: 0, gcount: 0, downT: 0, deadT: 0 };
   }
   makeEnemy(type, x, y) {
     const d = G.ED[type], kit = S.K[d.kit], hp = d.hp;
-    return { kind: 'fighter', team: 'e', uid: (G._uid = (G._uid || 0) + 1), type, def: d, kitId: d.kit, x, y, z: 0, vx: 0, vy: 0, vz: 0, face: x > 0 ? -1 : 1, hp, maxhp: hp, state: 'spawn', anim: 'walk', frame: 0, ft: 0, phase: 0, hw: (d.hw || 11) * kit.scale, hd: 7, ht: 58 * kit.scale, stride: 40 * kit.scale, runStride: 56 * kit.scale, invuln: 0, flash: 0, hitChain: 0, chainT: 0, cool: 40 + Math.random() * 40, token: false, ring: rnd(72, 118) * GS, laneOff: rnd(-26, 26), poise: d.poise || 0, hitSet: new Set(), downT: 0, deadT: 0, armor: false, rate: 1, retreat: 0, atk: null, boss: !!d.boss, summoned: false, grabT: 0 };
+    return { kind: 'fighter', team: 'e', uid: (G._uid = (G._uid || 0) + 1), type, def: d, kitId: d.kit, x, y, z: 0, vx: 0, vy: 0, vz: 0, face: x > 0 ? -1 : 1, hp, maxhp: hp, state: 'spawn', anim: 'walk', frame: 0, ft: 0, phase: 0, hw: (d.hw || 11) * kit.scale, hd: 7, ht: 58 * kit.scale, stride: (kit.strideMul || 40) * kit.scale, runStride: 56 * kit.scale, invuln: 0, flash: 0, hitChain: 0, chainT: 0, cool: 40 + Math.random() * 40, token: false, ring: rnd(72, 118) * GS, laneOff: rnd(-26, 26), poise: d.poise || 0, hitSet: new Set(), downT: 0, deadT: 0, armor: false, rate: 1, retreat: 0, atk: null, boss: !!d.boss, summoned: false, grabT: 0 };
   }
 
   /* ----- main tick ----- */

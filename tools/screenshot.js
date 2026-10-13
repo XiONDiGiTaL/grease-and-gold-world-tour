@@ -1,6 +1,6 @@
 // Renders real game frames headlessly to shots/*.png (for visual review).
 const fs = require('fs'), path = require('path'); const { createCanvas, GlobalFonts } = require('@napi-rs/canvas'); GlobalFonts.registerFromPath(path.join(__dirname, '..', 'assets/fonts/PressStart2P.woff2'), 'PS2P');
-['font', 'foodart', 'rigart', 'sprites', 'rig', 'input', 'audio', 'stages', 'game', 'ui'].forEach(n => require('../src/' + n + '.js'));
+['font', 'foodart', 'rigart', 'sprites', 'rig', 'enemyart', 'sheetkit', 'input', 'audio', 'stages', 'game', 'ui'].forEach(n => require('../src/' + n + '.js'));
 const G = globalThis.GG, I = G.Input; G.makeCanvas = (w, h) => createCanvas(w, h);
 const SC = 3, view = createCanvas(384 * SC, 216 * SC), low = createCanvas(384, 216);
 const g = new G.Game(); g.initAssets(G.makeCanvas);
