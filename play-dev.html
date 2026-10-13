@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Grease &amp; Gold: World Tour</title>
+<style>
+:root{--ink:#14091c;--gold:#f2b630;--mag:#d93aa0;--cream:#f6ead0}
+html,body{margin:0;height:100%;background:var(--ink);overflow:hidden;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+body{display:flex;align-items:center;justify-content:center;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);box-sizing:border-box}
+#view{image-rendering:pixelated;image-rendering:crisp-edges;display:block;touch-action:none;background:#000}
+#touch{display:none;position:fixed;inset:0;pointer-events:none;z-index:5}
+#touch.on{display:block}
+#touch>*{pointer-events:auto;touch-action:none}
+#dpad{position:absolute;left:calc(14px + env(safe-area-inset-left,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));width:150px;height:150px;border-radius:50%;background:rgba(20,9,28,.45);border:2px solid rgba(242,182,48,.55)}
+#dpad::before,#dpad::after{content:"";position:absolute;background:rgba(246,234,208,.35);border-radius:3px}
+#dpad::before{left:50%;top:14%;width:6px;height:72%;transform:translateX(-50%)}
+#dpad::after{top:50%;left:14%;height:6px;width:72%;transform:translateY(-50%)}
+.btn{position:absolute;width:68px;height:68px;border-radius:50%;background:rgba(20,9,28,.5);border:3px solid rgba(242,182,48,.75);color:var(--cream);font:900 14px "Arial Black",Impact,sans-serif;display:flex;align-items:center;justify-content:center;letter-spacing:.5px}
+.btn.down{background:rgba(242,182,48,.55);color:var(--ink)}
+#bA{right:calc(100px + env(safe-area-inset-right,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px));width:78px;height:78px;border-color:#f2b630}
+#bJ{right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(58px + env(safe-area-inset-bottom,0px))}
+#bS{right:calc(70px + env(safe-area-inset-right,0px));bottom:calc(112px + env(safe-area-inset-bottom,0px));border-color:var(--mag)}
+#bG{right:calc(150px + env(safe-area-inset-right,0px));bottom:calc(104px + env(safe-area-inset-bottom,0px));width:54px;height:54px;font-size:12px}
+#bP{right:calc(10px + env(safe-area-inset-right,0px));top:calc(8px + env(safe-area-inset-top,0px));width:38px;height:38px;font-size:15px;border-width:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head>
+<body>
+<canvas id="view" width="768" height="432" aria-label="Grease and Gold: World Tour game"></canvas>
+<div id="touch">
+  <div id="dpad"></div>
+  <div class="btn" id="bA" data-btn="attack">ATK</div>
+  <div class="btn" id="bJ" data-btn="jump">JMP</div>
+  <div class="btn" id="bS" data-btn="special">SPC</div>
+  <div class="btn" id="bG" data-btn="grab">GRB</div>
+  <div class="btn" id="bP" data-btn="pause">II</div>
+</div>
+<script src="src/sprites.js"></script>
+<script src="src/input.js"></script>
+<script src="src/audio.js"></script>
+<script src="src/stages.js"></script>
+<script src="src/game.js"></script>
+<script src="src/ui.js"></script>
+<script src="src/boot.js"></script>
+</body></html>
