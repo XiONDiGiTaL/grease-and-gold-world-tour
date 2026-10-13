@@ -28,9 +28,9 @@ const CLS = ['', 'skin', 'coat', 'fleece', 'shirt', 'pants', 'shoes', 'hair', 's
 /* ---- kit variants (recolour + head variant + width) ---- */
 const SK = { h: 22, s: .45, vMul: .95 };
 const V = {
-  ricky: { art: 'ricky', pw: 'flag', restW: 90, ws: 1.45, tint: { pants: { h: 235, s: .25, vMul: .62 } } },
-  vv: { art: 'vv', pw: 'mic', restW: 114, ws: 1.3, tint: { hair: { h: 30, s: .52, vMul: 1.32 } } },
-  johnny: { art: 'johnny', pw: 'salami', restW: 53, ws: .66, twoHand: 88, stanceX: 2.7, weapon: 'salami' },
+  ricky: { art: 'ricky', pw: 'flag', restW: 90, ws: 1.25, tint: { pants: { h: 235, s: .25, vMul: .62 } } },
+  vv: { art: 'vv', pw: 'mic', restW: 114, ws: 1.0, tint: { hair: { h: 30, s: .52, vMul: 1.32 } } },
+  johnny: { art: 'johnny', pw: 'salami', restW: 53, ws: .66, twoHand: 88, weapon: 'salami' },
   mara: { art: 'vv', tint: { coat: { h: 350, s: .66, vMul: 1.15 }, hair: { h: 18, s: .5, vMul: .62 }, pants: { h: 24, s: .5, vMap: [0, 1.7] }, skin: { h: 22, s: .45, vMul: .92 } } },
 };
 
@@ -98,7 +98,27 @@ function skinLimb(hi, HW, pc, f, A0, B0, C0, Aw, Bw, Cw, torsoFn, clipY) {
 }
 const dist = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1]);
 
+/* The reference sprite IS the standing pose: derive the rest stance, hip height and rest hand targets from its joints so idle/walk/attacks are measured from it. */
+const REST = {};
+function restInfo(id) {
+  if (REST[id]) return REST[id]; const K = kitPieces(id), J = K.A.J, f = K.f, s = S.K[id].scale * Z, L = (a, b) => dist(J[a], J[b]) * f;
+  const totB = L('hipB', 'knB') + L('knB', 'anB') + (J.soleB[1] - J.anB[1]) * f, totF = L('hipF', 'knF') + L('knF', 'anF') + (J.soleF[1] - J.anF[1]) * f, lamL = Math.min(totB, totF) / (26 * s);
+  const upper = L('shN', 'elN'), foreN = L('elN', 'haN'), foreF = L('elF', 'haF'), lamAN = (upper + foreN) / (18 * s), lamAF = (upper + foreF) / (18 * s);
+  const H = ((J.soleB[1] - J.hipB[1]) + (J.soleF[1] - J.hipF[1])) / 2 * f, hipY = Math.min(25.6, H / (s * lamL)), oshY = hipY * s + 18 * s;
+  const hand = (sh, ha, lam) => [((J[ha][0] - J[sh][0]) * f / lam) / s, (oshY - (J[ha][1] - J[sh][1]) * f / lam) / s];
+  return REST[id] = { hipY, footB: (J.soleB[0] - J.hip[0]) * f / (s * lamL), footF: (J.soleF[0] - J.hip[0]) * f / (s * lamL), hB: hand('shN', 'haN', lamAN), hF: hand('shF', 'haF', lamAF) };
+}
+const GROUNDED = ['idle', 'walk', 'run', 'land', 'getup', 'a1', 'a2', 'a3', 'special', 'hit', 'grab', 'gstrike', 'throw', 'win', 'held'];
+function restPose(id, pose, anim) {
+  const R0 = restInfo(id);
+  if (anim === 'idle') return Object.assign({}, pose, { lean: pose.lean > 4 ? 1.5 : 0, hip: [0, R0.hipY], fF: [R0.footF, 0], fB: [R0.footB, 0], hB: [R0.hB[0] + (pose.hB[0] - 4) * .5, R0.hB[1] + (pose.hB[1] - 20) * .5], hF: [R0.hF[0] + (pose.hF[0] - 12) * .5, R0.hF[1] + (pose.hF[1] - 37) * .5] });
+  if (!GROUNDED.includes(anim)) return pose;
+  const o = Object.assign({}, pose); o.fF = [pose.fF[0] + R0.footF - 5, pose.fF[1]]; o.fB = [pose.fB[0] + R0.footB + 5, pose.fB[1]]; o.hip = [pose.hip[0], pose.hip[1] + (R0.hipY - 25)];
+  if (anim === 'walk' || anim === 'run') { o.hB = [R0.hB[0] + (pose.hB[0] - 4) * .8, R0.hB[1] + (pose.hB[1] - 22) * .8]; o.hF = [R0.hF[0] + (pose.hF[0] - 11) * .7, R0.hF[1] + (pose.hF[1] - 36) * .7]; }
+  return o;
+}
 function renderFrame(id, pose, anim) {
+  pose = restPose(id, pose, anim);
   const K = kitPieces(id), A = K.A, J = A.J, f = K.f, P = K.P, k = S.K[id], s = k.scale * Z, v = K.v;
   const lean = rad(pose.lean), cl = Math.cos(lean), sl = Math.sin(lean), HW = CELL * SS, hi = new Float32Array(HW * HW * 4);
   const L = (a, b) => dist(J[a], J[b]) * f;
@@ -122,7 +142,7 @@ function renderFrame(id, pose, anim) {
   const drawLeg = (l, foot) => { if (P['leg' + l.sfx]) skinLimb(hi, HW, P['leg' + l.sfx], f, J['hip' + l.sfx], J['kn' + l.sfx], J['an' + l.sfx], l.hp, l.knee, l.ankle, (x, y) => tp([x, y]), clipOn ? groundClip : undefined); draw('foot' + l.sfx, J['an' + l.sfx], l.ankle, tilt(l, foot)); };
   // arms
   const shN = tp(J.shN), shF = tp(J.shF), hN = handTarget(shN, pose.hB, lamAN), hF = handTarget(shF, pose.hF, lamAF);
-  const aF = S.ik(shF[0], shF[1], hF[0], hF[1], upperLen, foreF, [-.4, 1]);
+  const aF = S.ik(shF[0], shF[1], hF[0], hF[1], upperLen, foreF, [.35, 1]); /* the raised arm's elbow sits down-and-forward, as drawn in the references */
   const rotF = ang(aF.mid, aF.end) - ang(J.elF, J.haF), gx = (J.grip[0] - J.elF[0]) * f, gy = (J.grip[1] - J.elF[1]) * f, gripW = [aF.mid[0] + gx * Math.cos(rotF) - gy * Math.sin(rotF), aF.mid[1] + gx * Math.sin(rotF) + gy * Math.cos(rotF)];
   const wdx = Math.cos(rad(pose.wang)), wdy = -Math.sin(rad(pose.wang)), hN2 = v.twoHand ? [gripW[0] - wdx * v.twoHand * f * (v.ws || 1) + (pose.ext || 0) * s * wdx, gripW[1] - wdy * v.twoHand * f * (v.ws || 1) + (pose.ext || 0) * s * wdy] : hN;
   const aN = S.ik(shN[0], shN[1], hN2[0], hN2[1], upperLen, foreN, [-.4, 1]);
@@ -146,18 +166,34 @@ function renderFrame(id, pose, anim) {
   for (let y = 0; y < CELL; y++) for (let x = 0; x < CELL; x++) {
     let r = 0, g = 0, b = 0, a = 0; const sx0 = (AX + (x - AX) / xs) * SS, sx1 = (AX + (x + 1 - AX) / xs) * SS;
     for (let yy = 0; yy < SS; yy++) for (let xx = 0; xx < SS; xx++) { const hx = Math.min(HW - 1, Math.floor(sx0 + (sx1 - sx0) * (xx + .5) / SS)), q = ((y * SS + yy) * HW + hx) * 4, al = hi[q + 3]; if (al > 0) { r += hi[q] * al; g += hi[q + 1] * al; b += hi[q + 2] * al; a += al; } }
-    if (a >= SS * SS * .5) { r = Math.round(r / a) & 0xf8; g = Math.round(g / a) & 0xf8; b = Math.round(b / a) & 0xf8; buf.d[y * CELL + x] = ((255 << 24) | (Math.min(255, b + 4) << 16) | (Math.min(255, g + 4) << 8) | Math.min(255, r + 4)) >>> 0; }
+    if (a >= SS * SS * .5) { r = Math.round(r / a); g = Math.round(g / a); b = Math.round(b / a); buf.d[y * CELL + x] = ((255 << 24) | (Math.min(255, b) << 16) | (Math.min(255, g) << 8) | Math.min(255, r)) >>> 0; }
   }
   // procedural weapons that are not part of the reference art (salami, baton, case, cane)
   if (wk && !(P.weapon && v.pw && wk === v.pw)) { const hand = [aF.end[0], aF.end[1]]; const tmp = new Buf(CELL, CELL); S.drawWeapon(tmp, k, pose, hand, hipS, s); for (let i = 0; i < tmp.d.length; i++) if (tmp.d[i] && (!clipOn || i < AY * CELL)) buf.d[i] = tmp.d[i]; }
   if (anim === 'down' || anim === 'dead') { let bot = 0; for (let y = CELL - 1; y >= 0 && !bot; y--) for (let x = 0; x < CELL; x++) if (buf.d[y * CELL + x]) { bot = y; break; } const dy = bot - (AY - 1); if (dy > 0) { for (let y = 0; y < CELL; y++) for (let x = 0; x < CELL; x++) buf.d[y * CELL + x] = y + dy < CELL ? buf.d[(y + dy) * CELL + x] : 0; } }
-  buf.outline(0xff261218 >>> 0); buf.outline(0xff261218 >>> 0);
+  buf.outline(0xff261218 >>> 0);
   return { buf, rig: { hip: hipS, sh: neck, head: [neck[0] - sl * 6 * s, neck[1] - cl * 9 * s], hand: aF.end, lF, lB } };
 }
 
+/* Idle = the reference pieces assembled exactly as drawn (identity transforms), with a tiny weapon/hair sway. */
+const REST_ORDER = { ricky: ['weapon', 'legB', 'footB', 'torso', 'legF', 'footF', 'head', 'armN', 'foreFar'], vv: ['hair', 'legB', 'footB', 'torso', 'legF', 'footF', 'head', 'armN', 'foreFar', 'weapon'], johnny: ['legB', 'footB', 'torso', 'legF', 'footF', 'head', 'armN', 'weapon', 'foreFar'] };
+const SWAY = [[0, 0], [2.2, 1.2], [-2.2, -1], [0, 0]];
+function renderRestFrame(id, i) {
+  const K = kitPieces(id), J = K.A.J, f = K.f, P = K.P, v = K.v, HW = CELL * SS, hi = new Float32Array(HW * HW * 4), yG = Math.max(J.soleB[1], J.soleF[1]);
+  const W = (q) => [AX + (q[0] - J.hip[0]) * f, AY - (yG - q[1]) * f];
+  for (const nm of REST_ORDER[v.art]) { if (!P[nm]) continue;
+    if (nm === 'weapon') drawPiece(hi, HW, P[nm], J, J.grip, W(J.grip), rad(SWAY[i][0]), v.ws);
+    else if (nm === 'hair') drawPiece(hi, HW, P[nm], J, J.hairP, W(J.hairP), rad(SWAY[i][1]), 1);
+    else drawPiece(hi, HW, P[nm], J, J.hip, W(J.hip), 0, 1, AY * SS - 1); }
+  const buf = new Buf(CELL, CELL);
+  for (let y = 0; y < CELL; y++) for (let x = 0; x < CELL; x++) { const q = (y * HW + x) * 4, al = hi[q + 3]; if (al >= .5) { const r2 = Math.min(255, Math.round(hi[q])), g2 = Math.min(255, Math.round(hi[q + 1])), b2 = Math.min(255, Math.round(hi[q + 2])); buf.d[y * CELL + x] = ((255 << 24) | (b2 << 16) | (g2 << 8) | r2) >>> 0; } }
+  buf.outline(0xff261218 >>> 0);
+  const nk = W(J.neck), sl = W(J.hip);
+  return { buf, rig: { hip: sl, sh: nk, head: [nk[0], nk[1] - 9 * S.K[id].scale * Z], hand: W(J.haF), lF: null, lB: null } };
+}
 function renderRigKit(id, isPlayer) {
   const k = S.K[id], poses = S.buildPoses(k, isPlayer), frames = {}, rigs = {};
-  for (const a in poses) { frames[a] = []; rigs[a] = []; poses[a].forEach(p => { const r = renderFrame(id, p, a); frames[a].push(r.buf); rigs[a].push(r.rig); }); }
+  for (const a in poses) { frames[a] = []; rigs[a] = []; poses[a].forEach((p, pi) => { const r = (a === 'idle' && kitPieces(id).v.pw) ? renderRestFrame(id, pi) : renderFrame(id, p, a); frames[a].push(r.buf); rigs[a].push(r.rig); }); }
   return { id, kit: k, frames, rigs, poses };
 }
 S.renderRigKit = renderRigKit; S.RIGVARIANTS = V;

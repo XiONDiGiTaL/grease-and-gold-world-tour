@@ -83,7 +83,7 @@ Object.values(K).forEach(k => { const walk = (o) => { for (const key in o) { if 
 const hexOf = (s) => hex(s);
 
 /* ---------- poses ---------- */
-const BASE = { hip: [0, 25], lean: 4, head: 0, fF: [5, 0], fB: [-5, 0], hF: [12, 37], hB: [6, 35], wang: 60, ext: 0, legBend: [1, 0.1] };
+const BASE = { hip: [0, 25], lean: 4, head: 0, fF: [5, 0], fB: [-5, 0], hF: [12, 37], hB: [4, 20], wang: 60, ext: 0, legBend: [1, 0.1] };
 const P = (o) => Object.assign({}, BASE, o);
 const LEG = { fF: [12, 0], fB: [-8, 0] };
 
@@ -100,8 +100,8 @@ const spinFrames = (n, f) => { const o = []; for (let i = 0; i < n; i++) o.push(
 
 const COMMON = {
   idle: (w) => [P({ wang: w, hB: [4, 20] }), P({ wang: w, hF: [12, 38], hB: [5, 21] }), P({ wang: w, hF: [12, 38], hB: [5, 21], lean: 5 }), P({ wang: w, lean: 5, hB: [4, 20] })],
-  walk: (w) => walkFrames(8, 8, 5, 5, 1.2, 25, 4).map(p => (p.wang = w, p)),
-  run: (w) => walkFrames(6, 11, 8, 14, 1.8, 24, 6).map(p => (p.wang = w, p.hF = [10 + (p.hF[0] - 11) * 1.2, 34], p)),
+  walk: (w) => walkFrames(8, 6, 2.4, 3, .5, 25, 3).map(p => (p.wang = w, p)),
+  run: (w) => walkFrames(6, 11, 5, 12, 1.5, 24, 6).map(p => (p.wang = w, p.hF = [10 + (p.hF[0] - 11) * 1.2, 34], p)),
   jump: () => [P({ hip: [0, 22], lean: 6, fF: [11, 11], fB: [-6, 7], hF: [14, 44], hB: [4, 47] }), P({ hip: [0, 22], lean: 4, fF: [9, 9], fB: [-8, 11], hF: [13, 40], hB: [2, 44] }), P({ hip: [0, 24], lean: 2, fF: [7, 1], fB: [-7, 0], hF: [12, 42], hB: [2, 40] })],
   land: () => [P({ hip: [0, 19], lean: 18, fF: [12, 0], fB: [-10, 0], hF: [14, 27], hB: [6, 25] })],
   hit: () => [P({ hip: [-3, 24], lean: -12, head: -12, fF: [8, 0], fB: [-12, 0], hF: [8, 40], hB: [-8, 36] }), P({ hip: [-2, 24], lean: -7, head: -6, fF: [9, 0], fB: [-11, 0], hF: [9, 31], hB: [-5, 30] })],
