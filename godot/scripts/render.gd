@@ -358,10 +358,12 @@ func ui_hud() -> void:
     if game.boss_banner > 0 and ((game.boss_banner >> 3) & 1) == 1:
       txt("WARNING", GW / 2.0, 80, 16, RED, 1)
     if game.wave_state == "walk" and game.wave_idx < game.stage.waves.size() and game.go_t > 10 and game.wave_idx > 0 and ((game.go_t >> 4) & 1) == 1:
-      txt("GO", GW - 46, 90, 16, GOLD2, 1)
-      draw_rect(Rect2(GW - 31, 86, 24, 14), INK)
-      draw_rect(Rect2(GW - 30, 91, 10, 5), GOLD2)
-      draw_colored_polygon(PackedVector2Array([Vector2(GW - 20, 87), Vector2(GW - 9, 93.5), Vector2(GW - 20, 100)]), GOLD2)
+      var ap := PackedVector2Array([Vector2(GW - 30, 91), Vector2(GW - 19, 91), Vector2(GW - 19, 86), Vector2(GW - 7, 94.5), Vector2(GW - 19, 103), Vector2(GW - 19, 98), Vector2(GW - 30, 98)])
+      var ol := ap.duplicate()
+      ol.append(ap[0])
+      draw_polyline(ol, INK, 2.0)
+      draw_colored_polygon(ap, GOLD2)
+      txt("GO", GW - 46, 100, 16, GOLD2, 1)
     if game.flash_t > 0:
       draw_rect(Rect2(0, 0, GW, GH), Color(1, 1, 1, game.flash_t / 10.0))
 
