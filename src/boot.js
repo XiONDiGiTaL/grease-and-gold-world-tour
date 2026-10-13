@@ -1,8 +1,8 @@
 /* Browser bootstrap: canvas sizing, fixed-timestep loop, pointer/touch controls. */
 (function (G) {
 'use strict';
-const GW = G.GW, GH = G.GH, I = G.Input, view = document.getElementById('view'), low = G.makeCanvas(GW, GH);
-const game = G.game = new G.Game(); game.state = 'loading';
+const GW = G.GW, GH = G.GH, I = G.Input, view = document.getElementById('view'), low = G.makeCanvas(Math.round(GW * G.Z), Math.round(GH * G.Z));
+const touch = document.getElementById('touch'), game = G.game = new G.Game(); game.state = 'loading';
 function resize() {
   const dpr = window.devicePixelRatio || 1, w = window.innerWidth, h = window.innerHeight; let s = Math.min(w * dpr / GW, h * dpr / GH); if (s >= 1) s = Math.floor(s);
   view.width = Math.round(GW * s); view.height = Math.round(GH * s); view.style.width = (view.width / dpr) + 'px'; view.style.height = (view.height / dpr) + 'px';
@@ -12,8 +12,8 @@ const unlock = () => G.Audio.unlock(); ['pointerdown', 'keydown', 'touchstart'].
 let last = performance.now(), acc = 0; const STEP = 1000 / 60;
 function frame(now) {
   acc += Math.min(100, now - last); last = now; let n = 0;
-  while (acc >= STEP && n < 5) { if (game.state !== 'loading') game.update(); acc -= STEP; n++; } if (n === 5) acc = 0;
-  game.renderLow(low); game.renderUI(view, low); requestAnimationFrame(frame);
+  while (acc >= STEP && n < 5) { if (game.state !== 'loading' || game.pending) game.update(); acc -= STEP; n++; } if (n === 5) acc = 0;
+  game.renderLow(low); game.renderUI(view, low); G.Music.sync(); touch.classList.toggle('off', game.state !== 'play' && game.state !== 'pause'); requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
 G.loadFont().then(() => setTimeout(() => { game.initAssets(G.makeCanvas); game.state = 'title'; }, 60));
@@ -28,7 +28,6 @@ view.addEventListener('pointerdown', ev => {
 });
 
 /* touch controls */
-const touch = document.getElementById('touch');
 if ('ontouchstart' in window || (window.matchMedia && matchMedia('(pointer:coarse)').matches)) touch.classList.add('on');
 const T = I._touch;
 document.querySelectorAll('[data-btn]').forEach(el => { const b = el.dataset.btn;

@@ -8,7 +8,7 @@ const dom = new JSDOM(fs.readFileSync(file, 'utf8'), { runScripts: 'dangerously'
   const real = new WeakMap(), proto = w.HTMLCanvasElement.prototype;
   proto.getContext = function (t) { let c = real.get(this); if (!c) { c = createCanvas(this.width || 300, this.height || 150); real.set(this, c); this._c = c; const ctx = c.getContext('2d'), di = ctx.drawImage.bind(ctx); ctx.drawImage = (img, ...a) => di(img && img._c ? img._c : img, ...a); c._ctx = ctx; }
     if (this.width && (c.width !== this.width || c.height !== this.height)) { c.width = this.width; c.height = this.height; const ctx = c.getContext('2d'), di = ctx.drawImage.bind(ctx); ctx.drawImage = (img, ...a) => di(img && img._c ? img._c : img, ...a); c._ctx = ctx; } return c._ctx || c.getContext(t); };
-  w.addEventListener('error', e => errors.push('window.onerror: ' + e.message + ' @' + e.filename + ':' + e.lineno)); w.matchMedia = () => ({ matches: false }); w.AudioContext = undefined; w.webkitAudioContext = undefined;
+  w.addEventListener('error', e => errors.push('window.onerror: ' + e.message + ' @' + e.filename + ':' + e.lineno)); w.matchMedia = () => ({ matches: false }); w.__played = []; w.HTMLMediaElement.prototype.play = function () { w.__played.push(this.src.slice(0, 30)); return Promise.resolve(); }; w.HTMLMediaElement.prototype.pause = function () { }; w.AudioContext = undefined; w.webkitAudioContext = undefined;
 } });
 const w = dom.window, sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const key = (code, down) => w.dispatchEvent(new w.KeyboardEvent(down ? 'keydown' : 'keyup', { code, bubbles: true, cancelable: true }));
@@ -21,7 +21,8 @@ const checks = []; const ok = (c, n, i) => { checks.push([c, n]); console.log(c 
   const booted = await until(() => G.game.state === 'title', 60000); ok(booted, 'boots past loading to the title screen', G.game.state); await sleep(400); shot('01_title');
   await tap('Enter'); ok(G.game.state === 'select', 'Enter on title opens character select', G.game.state); await sleep(300); shot('02_select');
   await tap('ArrowRight'); await tap('ArrowLeft');
-  await tap('Enter'); ok(G.game.state === 'play', 'Enter starts the game', G.game.state);
+  await tap('Enter'); ok(await until(() => G.game.state === 'play', 120000), 'Enter starts the game (stage assets build, then play)', G.game.state);
+  ok(G.Music.cur === 'arcade' && w.__played.length > 0 && G.MUSIC.arcade.length > 1e6 && G.MUSIC.kneel.length > 1e6, 'stage 1 plays the embedded Arcade Tune (both songs embedded)', { cur: G.Music.cur, played: w.__played.length });
   await sleep(2600); const p = G.game.players[0]; const x0 = p.x; shot('03_play_start');
   key('ArrowRight', true); await sleep(1500); key('ArrowRight', false); ok(p.x > x0 + 30, 'holding right walks the fighter', p.x - x0);
   const y0 = p.y; key('ArrowDown', true); await sleep(500); key('ArrowDown', false); ok(p.y > y0 + 5, 'holding down walks into the lane', p.y - y0);

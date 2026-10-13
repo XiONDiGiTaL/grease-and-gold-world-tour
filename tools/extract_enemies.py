@@ -92,15 +92,15 @@ def recolor(c,rule):
         if tie: return hsv2rgb(.12,.25,min(1,v*1.25))
         if suit: return hsv2rgb(.97,.75,v*2.0+.06)
     return c
-SETS={'juice84':('juice',84),'juice116':('juice',116),'hobo80':('hobo',80),'poop82':('poop',82),'biz82':('biz',82),'biz112':('biz',112),'biz122':('biz',122)}
-KITS={'guard':('juice84',None),'exec':('juice84','orange'),'auditor':('juice116','gold'),'brawler':('hobo80',None),'raider':('poop82',None),'heavy':('biz82',None),'ledger':('biz112','ledger'),'bigtony':('biz122','tony')}
+SETS={'juice84':('juice',210),'juice98':('juice',245),'hobo80':('hobo',200),'poop82':('poop',205),'biz82':('biz',205),'biz96':('biz',240),'biz104':('biz',260)}
+KITS={'guard':('juice84',None),'exec':('juice84','orange'),'auditor':('juice98','gold'),'brawler':('hobo80',None),'raider':('poop82',None),'heavy':('biz82',None),'ledger':('biz96','ledger'),'bigtony':('biz104','tony')}
 out={'sets':{},'kits':{}}; preview=[]
 for sname,(en,target) in SETS.items():
     frames=build(en,CFG[en],target)
     # shared palette
     px=np.concatenate([f[0][f[0][...,3]>0][:,:3] for f in frames.values()]); side=int(np.ceil(np.sqrt(len(px))))
-    mos=np.zeros((side*side,3),np.uint8); mos[:len(px)]=px; q=Image.fromarray(mos.reshape(side,side,3),'RGB').quantize(colors=44,method=Image.MEDIANCUT,dither=Image.NONE)
-    pal=np.array(q.getpalette()[:44*3]).reshape(-1,3); palimg=Image.new('P',(1,1)); palimg.putpalette(q.getpalette())
+    mos=np.zeros((side*side,3),np.uint8); mos[:len(px)]=px; q=Image.fromarray(mos.reshape(side,side,3),'RGB').quantize(colors=56,method=Image.MEDIANCUT,dither=Image.NONE)
+    pal=np.array(q.getpalette()[:56*3]).reshape(-1,3); palimg=Image.new('P',(1,1)); palimg.putpalette(q.getpalette())
     fo={}
     for fn,(a,standing) in frames.items():
         h,w=a.shape[:2]; ax=anchor_x(a,standing); rgb=Image.fromarray(np.ascontiguousarray(a[...,:3]),'RGB').quantize(palette=palimg,dither=Image.NONE); idx=np.array(rgb).astype(np.uint8)+1; idx[a[...,3]==0]=0

@@ -3,7 +3,7 @@
    box filtering, 5-bit palette posterise and a 1px outline. Johnny and every enemy are recolours/variants of those pieces. */
 (function (G) {
 'use strict';
-const S = G.Sprites, Buf = S.Buf, CELL = S.CELL, AX = S.AX, AY = S.AY, SS = 2;
+const S = G.Sprites, Buf = S.Buf, CELL = S.CELL, AX = S.AX, AY = S.AY, SS = 1, Z = S.Z;
 const b64 = (s) => typeof atob !== 'undefined' ? atob(s) : Buffer.from(s, 'base64').toString('binary');
 const rad = (d) => d * Math.PI / 180;
 
@@ -60,7 +60,7 @@ function prescale(px, w, h, fs) {
 }
 const CACHE = {};
 function kitPieces(id) {
-  if (CACHE[id]) return CACHE[id]; const v = V[id], A = art(v.art), k = S.K[id], f = (64 * k.scale) / A.H, fs = f * SS, P = {};
+  if (CACHE[id]) return CACHE[id]; const v = V[id], A = art(v.art), k = S.K[id], f = (64 * k.scale * Z) / A.H, fs = f * SS, P = {};
   for (const [n, part] of Object.entries(A.parts)) { const px = colorize(A, part, v.tint); if (n === 'head') headVariant(A, part, px, v.head, v.capC, v.tint); P[n] = Object.assign(prescale(px, part.w, part.h, fs), { ox: part.x, oy: part.y }); }
   return CACHE[id] = { A, f, fs, P, v };
 }
@@ -72,8 +72,11 @@ function drawPiece(hi, HW, pc, J, pivot, world, rot, mul, clipY) {
   const yMax = clipY === undefined ? HW - 1 : clipY; const x0 = Math.max(0, Math.floor(Math.min(...corners.map(q => q[0])))), x1 = Math.min(HW - 1, Math.ceil(Math.max(...corners.map(q => q[0])))), y0 = Math.max(0, Math.floor(Math.min(...corners.map(q => q[1])))), y1 = Math.min(yMax, Math.ceil(Math.max(...corners.map(q => q[1]))));
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const vx = x + .5 - wx, vy = y + .5 - wy, u = (vx * c + vy * s) / m + px, w2 = (-vx * s + vy * c) / m + py, sx = Math.floor(u), sy = Math.floor(w2); if (sx < 0 || sy < 0 || sx >= pc.W || sy >= pc.H) continue;
-    const si = (sy * pc.W + sx) * 4, a = pc.d[si + 3]; if (a <= 0) continue; const di = (y * HW + x) * 4, ia = 1 - a;
-    hi[di] = pc.d[si] * a + hi[di] * ia; hi[di + 1] = pc.d[si + 1] * a + hi[di + 1] * ia; hi[di + 2] = pc.d[si + 2] * a + hi[di + 2] * ia; hi[di + 3] = a + hi[di + 3] * ia;
+    // bilinear (premultiplied) sample of the prescaled piece
+    const fx = u - .5, fy = w2 - .5, x0 = Math.floor(fx), y0 = Math.floor(fy), tx = fx - x0, ty = fy - y0; let cr = 0, cg = 0, cb = 0, ca = 0;
+    for (let jy = 0; jy < 2; jy++) for (let jx = 0; jx < 2; jx++) { const qx = x0 + jx, qy = y0 + jy; if (qx < 0 || qy < 0 || qx >= pc.W || qy >= pc.H) continue; const wgt = (jx ? tx : 1 - tx) * (jy ? ty : 1 - ty), qi = (qy * pc.W + qx) * 4, qa = pc.d[qi + 3] * wgt; if (qa > 0) { cr += pc.d[qi] * qa; cg += pc.d[qi + 1] * qa; cb += pc.d[qi + 2] * qa; ca += qa; } }
+    if (ca < .5) continue; const a = Math.min(1, ca * 1.15), di = (y * HW + x) * 4, ia = 1 - a, il = 1 / ca;
+    hi[di] = cr * il * a + hi[di] * ia; hi[di + 1] = cg * il * a + hi[di + 1] * ia; hi[di + 2] = cb * il * a + hi[di + 2] * ia; hi[di + 3] = a + hi[di + 3] * ia;
   }
 }
 const ang = (a, b) => Math.atan2(b[1] - a[1], b[0] - a[0]);
@@ -96,7 +99,7 @@ function skinLimb(hi, HW, pc, f, A0, B0, C0, Aw, Bw, Cw, torsoFn, clipY) {
 const dist = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1]);
 
 function renderFrame(id, pose, anim) {
-  const K = kitPieces(id), A = K.A, J = A.J, f = K.f, P = K.P, k = S.K[id], s = k.scale, v = K.v;
+  const K = kitPieces(id), A = K.A, J = A.J, f = K.f, P = K.P, k = S.K[id], s = k.scale * Z, v = K.v;
   const lean = rad(pose.lean), cl = Math.cos(lean), sl = Math.sin(lean), HW = CELL * SS, hi = new Float32Array(HW * HW * 4);
   const L = (a, b) => dist(J[a], J[b]) * f;
   const Lth = (L('hipB', 'knB') + L('hipF', 'knF')) / 2, Lsh = (L('knB', 'anB') + L('knF', 'anF')) / 2, ankH = (J.soleB[1] - J.anB[1]) * f, lamL = (Lth + Lsh + ankH) / (26 * s);
@@ -144,7 +147,7 @@ function renderFrame(id, pose, anim) {
   // procedural weapons that are not part of the reference art (salami, baton, case, cane)
   if (wk && !(P.weapon && wk === (id === 'ricky' ? 'flag' : id === 'vv' ? 'mic' : '#'))) { const hand = [aF.end[0], aF.end[1]]; const tmp = new Buf(CELL, CELL); S.drawWeapon(tmp, k, pose, hand, hipS, s); for (let i = 0; i < tmp.d.length; i++) if (tmp.d[i] && (!clipOn || i < AY * CELL)) buf.d[i] = tmp.d[i]; }
   if (anim === 'down' || anim === 'dead') { let bot = 0; for (let y = CELL - 1; y >= 0 && !bot; y--) for (let x = 0; x < CELL; x++) if (buf.d[y * CELL + x]) { bot = y; break; } const dy = bot - (AY - 1); if (dy > 0) { for (let y = 0; y < CELL; y++) for (let x = 0; x < CELL; x++) buf.d[y * CELL + x] = y + dy < CELL ? buf.d[(y + dy) * CELL + x] : 0; } }
-  buf.outline(0xff261218 >>> 0);
+  buf.outline(0xff261218 >>> 0); buf.outline(0xff261218 >>> 0);
   return { buf, rig: { hip: hipS, sh: neck, head: [neck[0] - sl * 6 * s, neck[1] - cl * 9 * s], hand: aF.end, lF, lB } };
 }
 

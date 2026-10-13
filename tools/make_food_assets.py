@@ -4,7 +4,7 @@ import os, json, base64
 from PIL import Image
 import numpy as np
 SRC='assets/food_src'; OUT='assets/food'; os.makedirs(OUT, exist_ok=True)
-TARGET={'adana':(54,None),'shish':(54,None),'doner':(54,None),'lahmacun':(54,None),'kunefe':(52,None),'spit':(None,64),'empty':(60,None),'glow':(30,None)}
+TARGET={'adana':(135,None),'shish':(135,None),'doner':(135,None),'lahmacun':(135,None),'kunefe':(130,None),'spit':(None,160),'empty':(150,None),'glow':(75,None)}
 OUTLINE=(27,18,38)
 art={}
 for name,(tw,th) in TARGET.items():
@@ -19,7 +19,7 @@ for name,(tw,th) in TARGET.items():
     rgb=np.clip(rgb,0,255).astype(np.uint8)
     # pad 2px, quantize colours (limited 16-bit palette), outline
     H,W=mask.shape; pad=2; M=np.zeros((H+pad*2,W+pad*2),bool); C=np.zeros((H+pad*2,W+pad*2,3),np.uint8); M[pad:-pad,pad:-pad]=mask; C[pad:-pad,pad:-pad]=rgb
-    q=Image.fromarray(C,'RGB').quantize(colors=28,method=Image.MEDIANCUT,dither=Image.NONE).convert('RGB'); C=np.array(q)
+    q=Image.fromarray(C,'RGB').quantize(colors=44,method=Image.MEDIANCUT,dither=Image.NONE).convert('RGB'); C=np.array(q)
     out=np.zeros(M.shape+(4,),np.uint8); out[M,:3]=C[M]; out[M,3]=255
     o=np.zeros_like(M)
     for dy,dx in ((1,0),(-1,0),(0,1),(0,-1)): o|=np.roll(np.roll(M,dy,0),dx,1)

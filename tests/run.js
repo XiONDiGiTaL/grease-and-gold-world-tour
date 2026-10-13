@@ -41,7 +41,7 @@ const heights = {}; kits.forEach(([id]) => { const b = R[id].frames.idle[0].bbox
 ok(S.PLAYERS.every(id => Math.abs(R[id].rigs.idle[0].head[1] - R[id].rigs.idle[1].head[1]) < 1.6), 'head height stable across idle frames');
 // portrait / props / food
 const mkc = (w, h) => createCanvas(w, h);
-['crate', 'barrel', 'bin', 'boxes'].forEach(t => { const b = S.makeProp(t).bbox(); ok(b.x0 >= 0 && b.x1 <= 33 && b.y1 <= 35 && b.y0 >= 0, 'prop ' + t + ' within canvas'); });
+['crate', 'barrel', 'bin', 'boxes'].forEach(t => { const im = S.makeProp(t), b = im.bbox(); ok(b.x0 >= 0 && b.x1 <= im.w - 1 && b.y1 <= im.h - 1 && b.y0 >= 0, 'prop ' + t + ' within canvas'); });
 ['adana', 'shish', 'doner', 'lahmacun', 'kunefe', 'spit'].forEach(t => { const im = S.makeFood(t), b = im.bbox(); ok(b.x0 >= 1 && b.y0 >= 0 && b.x1 <= im.w - 2 && b.y1 <= im.h - 1, 'food ' + t + ' not clipped'); });
 // no magenta artifacts in any generated art (hue ~300deg, high saturation) except none expected
 let mag = 0; const chk = (b) => { for (const v of b.d) { if (!v) continue; const r = v & 255, g = (v >> 8) & 255, bl = (v >> 16) & 255; if (r > 200 && bl > 150 && g < 90) mag++; } };
@@ -92,6 +92,10 @@ const put = (g, type, dx, dy, st) => { const p = g.players[0], e = g.makeEnemy(t
   const it = g.items[0]; p.hp = 40; p.x = it.x - 2; p.y = it.y; step(g, 60); const itx = g.items.find(i => i === it); ok(!itx && p.hp > 40, 'walking over food heals', p.hp); }
 // poise-armored enemy hit by a knock-type move must recover from hit-stun (regression: stun was undefined -> stuck forever)
 { const g = mk('ricky'); clearEnemies(g); const p = g.players[0]; p.x = 150; g.cam.x = 90; const h = put(g, 'heavy', 36, 0); h.hp = h.maxhp = 900; h.poise = 999; g.hurt(h, p, { dmg: 1, knock: true, launch: 2, kb: 2, hs: 0, box: { z0: 10, z1: 40 } }); step(g, 60); ok(h.state === 'idle' && Number.isFinite(h.stun), 'heavy hit by a knock-move without poise break recovers from hit-stun (no stuck state)', { s: h.state, stun: h.stun }); }
+// food pickup: the collection effect shows the SAME food that was picked up (regression: it used to show an Adana plate for every food)
+{ const g = mk('ricky'); clearEnemies(g); const p = g.players[0]; p.x = 150; g.cam.x = 90; for (const type of ['doner', 'kunefe', 'lahmacun', 'shish', 'spit']) { g.parts = []; g.items = [{ type, x: p.x + 2, y: p.y, z: 0, life: 900, t: 0 }]; p.hp = 10; step(g, 2); const ghost = g.parts.find(q => q.type === 'foodghost'); ok(ghost && ghost.food === type && p.hp > 10, 'collecting ' + type + ' shows and heals ' + type, ghost && ghost.food); } }
+// music: stage 3 uses the second song, the rest the first
+ok(G.STAGES.map(s => s.music).join() === 'arcade,arcade,kneel,arcade', 'stage music: Arcade Tune on stages 1,2,4; I Don\'t Kneel on stage 3', G.STAGES.map(s => s.music));
 // crowd separation
 { const g = mk('ricky'); clearEnemies(g); const p = g.players[0]; p.x = 200; g.cam.x = 150; for (let i = 0; i < 5; i++) { const e = put(g, 'guard', 160 - 200 + 150 + 0, 0); e.x = 120; e.y = 170; e.cool = 9999; } step(g, 90); let mn = 1e9; for (let i = 0; i < g.enemies.length; i++) for (let j = i + 1; j < g.enemies.length; j++) { const A = g.enemies[i], B = g.enemies[j]; mn = Math.min(mn, Math.hypot((A.x - B.x) / ((A.hw + B.hw) * .9), (A.y - B.y) / 10)); } ok(mn > .8, 'crowd separation pulls stacked enemies apart (no body overlap)', mn); }
 // enemy windup readability

@@ -4,14 +4,14 @@
 'use strict';
 const S = G.Sprites, Buf = S.Buf, CELL = S.CELL, AX = S.AX, AY = S.AY, EA = G.ENEMYART;
 const b64 = (s) => typeof atob !== 'undefined' ? atob(s) : Buffer.from(s, 'base64').toString('binary');
-const HEIGHT = { guard: 84, exec: 84, brawler: 80, raider: 82, heavy: 82, ledger: 112, bigtony: 122, auditor: 116 };
+const HEIGHT = { guard: 84, exec: 84, brawler: 80, raider: 82, heavy: 82, ledger: 96, bigtony: 104, auditor: 98 };
 const decoded = {};
 function frameBuf(kit, name) {
   const key = kit + ':' + name; if (decoded[key]) return decoded[key];
   const K = EA.kits[kit], set = EA.sets[K.set], f = set.frames[name], pal = K.pal.map(h => { const n = parseInt(h, 16); return ((255 << 24) | ((n & 255) << 16) | (((n >> 8) & 255) << 8) | ((n >> 16) & 255)) >>> 0; });
   const bin = b64(f.d), b = new Buf(CELL, CELL), x0 = AX + f.x, y0 = AY + f.y;
   for (let y = 0; y < f.h; y++) for (let x = 0; x < f.w; x++) { const v = bin.charCodeAt(y * f.w + x); if (v) b.set(x0 + x, y0 + y, pal[v - 1]); }
-  b.outline(0xff261218 >>> 0); return decoded[key] = b;
+  b.outline(0xff261218 >>> 0); b.outline(0xff261218 >>> 0); return decoded[key] = b;
 }
 function sequence(list, n) { const out = []; for (let i = 0; i < n; i++) out.push(list[Math.min(list.length - 1, Math.floor(i * list.length / n))]); return out; }
 function renderSheetKit(id, isPlayer) {

@@ -2,7 +2,7 @@
 const fs = require('fs'), path = require('path'); const { createCanvas, GlobalFonts } = require('@napi-rs/canvas'); GlobalFonts.registerFromPath(path.join(__dirname, '..', 'assets/fonts/PressStart2P.woff2'), 'PS2P');
 ['font', 'foodart', 'rigart', 'sprites', 'rig', 'enemyart', 'sheetkit', 'input', 'audio', 'stages', 'game', 'ui'].forEach(n => require('../src/' + n + '.js'));
 const G = globalThis.GG, I = G.Input; G.makeCanvas = (w, h) => createCanvas(w, h);
-const SC = 3, view = createCanvas(384 * SC, 216 * SC), low = createCanvas(384, 216);
+const SC = 3, view = createCanvas(384 * SC, 216 * SC), low = createCanvas(960, 540);
 const g = new G.Game(); g.initAssets(G.makeCanvas);
 const out = (n) => fs.writeFileSync(path.join(__dirname, '..', 'shots', n + '.png'), view.toBuffer('image/png'));
 const draw = () => { g.renderLow(low); g.renderUI(view, low); };

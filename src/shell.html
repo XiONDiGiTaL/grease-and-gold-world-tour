@@ -9,6 +9,7 @@ body{display:flex;align-items:center;justify-content:center;padding:env(safe-are
 #view{image-rendering:pixelated;image-rendering:crisp-edges;display:block;touch-action:none;background:#000}
 #touch{display:none;position:fixed;inset:0;pointer-events:none;z-index:5}
 #touch.on{display:block}
+#touch.off{display:none!important}
 #touch>*{pointer-events:auto;touch-action:none}
 #dpad{position:absolute;left:calc(14px + env(safe-area-inset-left,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));width:150px;height:150px;border-radius:50%;background:rgba(20,9,28,.45);border:2px solid rgba(242,182,48,.55)}
 #dpad::before,#dpad::after{content:"";position:absolute;background:rgba(246,234,208,.35);border-radius:3px}

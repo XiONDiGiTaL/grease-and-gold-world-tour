@@ -79,9 +79,11 @@ class Game {
     this.hitstop = 0; this.shake = 0; this.cam = { x: 0, max: 0 }; this.waveIdx = 0; this.waveState = 'walk'; this.banner = 0; this.goT = 0; this.clearT = 0; this.combo = { n: 0, t: 0 }; this.lastEnemy = null; this.lastEnemyT = 0; this.tick = 0; this.flashT = 0;
   }
   /* ----- run / stage flow ----- */
+  beginRun(id) { this.state = 'loading'; this.loadWait = 0; this.pending = () => this.startRun(id); }
+  beginStage(i) { this.state = 'loading'; this.loadWait = 0; this.pending = () => this.startStage(i); }
   startRun(charId) { this.charId = charId; this.lives = 3; this.score = 0; this.carry = null; this.startStage(0); }
   startStage(i) {
-    const st = G.STAGES[i]; this.stageIdx = i; this.stage = st; const keep = this.players[0];
+    const st = G.STAGES[i]; if (this.ensureAssets) this.ensureAssets(i); if (G.Music) G.Music.play(st.music || 'arcade'); this.stageIdx = i; this.stage = st; const keep = this.players[0];
     this.resetWorld(); const p = this.makePlayer(this.charId);
     if (this.carry) { p.hp = Math.min(p.maxhp, Math.max(this.carry.hp, p.maxhp * .5)); p.hype = Math.max(25, this.carry.hype); }
     p.lives = this.lives; this.players = [p];
@@ -101,6 +103,7 @@ class Game {
   /* ----- main tick ----- */
   update() {
     I.pollPad && I.pollPad(); this.t++;
+    if (this.state === 'loading') { if (this.pending && ++this.loadWait > 2) { const f = this.pending; this.pending = null; f(); } I.tick(); I.endFrame(); return; }
     const frozen = this.state === 'play' && this.hitstop > 0 && !I.just('pause');
     if (this.state === 'play') this.updatePlay();
     else this.updateMenus();
@@ -108,7 +111,7 @@ class Game {
     I.endFrame();
   }
   updatePlay() {
-    if (I.just('pause')) { this.state = 'pause'; this.menu = 0; A.play('ui'); return; }
+    if (I.just('pause')) { this.state = 'pause'; this.menu = 0; A.play('ui'); if (G.Music) G.Music.duck(true); return; }
     if (this.hitstop > 0) { this.hitstop--; this.shake *= .9; return; }
     this.tick++; this.stageT++;
     this.players.forEach(p => this.updatePlayer(p));
@@ -229,7 +232,7 @@ class Game {
   downStep(e, wait) { e.downT++; e.x += e.vx; e.vx *= .85; if (e.team === 'p') e.x = clamp(e.x, this.cam.x + 6, this.cam.x + GW - 6); e.anim = 'down'; e.frame = e.downT < 10 ? 0 : 1; if (e.downT > wait) { e.state = 'getup'; restartAnim(e, 'getup'); e.invuln = 36; } }
   deadStep(e) { e.deadT++; e.x += e.vx; e.vx *= .85; if (e.team === 'p') { e.anim = 'dead'; e.frame = 0; if (e.deadT > 80) this.playerDied(e); } else { e.frame = 0; if (e.deadT > 70) e.remove = true; } }
   playerDied(p) {
-    this.lives--; if (this.lives <= 0) { this.state = 'gameover'; this.menu = 0; A.play('ko'); return; }
+    this.lives--; if (this.lives <= 0) { this.state = 'gameover'; this.menu = 0; A.play('ko'); if (G.Music) G.Music.stop(); return; }
     p.lives = this.lives; p.hp = p.maxhp; p.x = this.cam.x + 60; p.y = 170; p.z = 0; p.state = 'idle'; p.invuln = 150; p.hitChain = 0; setAnim(p, 'idle'); p.vx = p.vy = 0;
   }
 
@@ -383,7 +386,7 @@ class Game {
     if (p.state === 'dead' || p.state === 'down' || p.z > 10) return;
     this.items.forEach(it => { if (it.taken || it.z > 6) return; if (Math.abs(it.x - p.x) < 15 && Math.abs(it.y - p.y) < 11) {
       it.taken = true; const f = G.FOOD[it.type]; p.hp = Math.min(p.maxhp, p.hp + f.heal); this.score += 100; A.play('pick');
-      this.parts.push({ type: 'plate', x: it.x, y: it.y, z: 8, vz: .5, life: 40 }, { type: 'glow', x: it.x, y: it.y, z: 14, life: 18 }, { type: 'text', x: it.x, y: it.y, z: 26, vz: .6, life: 56, s: '+100' });
+      this.parts.push({ type: 'foodghost', food: it.type, x: it.x, y: it.y, z: 4, vz: .45, life: 34 }, { type: 'glow', x: it.x, y: it.y, z: 14, life: 18 }, { type: 'text', x: it.x, y: it.y, z: 26, vz: .6, life: 56, s: '+100' });
       for (let i = 0; i < 6; i++) this.parts.push({ type: 'sparkle', x: it.x + rnd(-14, 14), y: it.y, z: rnd(4, 24), vz: rnd(.2, .8), life: rnd(16, 30) });
     } });
   }
@@ -417,14 +420,14 @@ class Game {
   /* ----- menus ----- */
   updateMenus() {
     const j = (b) => I.just(b);
-    if (this.state === 'title') { if (j('start') || j('attack') || j('jump')) { this.state = 'select'; A.play('ui'); } }
-    else if (this.state === 'select') { const ids = Object.keys(G.CH); if (j('left')) { this.sel = (this.sel + 2) % 3; A.play('ui'); } if (j('right')) { this.sel = (this.sel + 1) % 3; A.play('ui'); } if (j('start') || j('attack')) { this.startRun(ids[this.sel]); A.play('go'); } if (j('pause') || j('back')) this.state = 'title'; }
-    else if (this.state === 'pause') { if (j('up')) this.menu = (this.menu + 3) % 4; if (j('down')) this.menu = (this.menu + 1) % 4; if (j('pause')) { this.state = 'play'; return; } if (j('start') || j('attack')) this.pauseChoose(this.menu); }
-    else if (this.state === 'gameover') { if (j('start') || j('attack')) { this.lives = 3; this.score = 0; this.carry = null; this.startStage(this.stageIdx); } if (j('pause') || j('back')) this.state = 'title'; }
-    else if (this.state === 'stageclear') { if (j('start') || j('attack')) { this.startStage(this.stageIdx + 1); A.play('go'); } }
+    if (this.state === 'title') { if (j('start') || j('attack') || j('jump')) { this.state = 'select'; A.play('ui'); if (G.Music) G.Music.play('arcade'); } }
+    else if (this.state === 'select') { const ids = Object.keys(G.CH); if (j('left')) { this.sel = (this.sel + 2) % 3; A.play('ui'); } if (j('right')) { this.sel = (this.sel + 1) % 3; A.play('ui'); } if (j('start') || j('attack')) { this.beginRun(ids[this.sel]); A.play('go'); } if (j('pause') || j('back')) this.state = 'title'; }
+    else if (this.state === 'pause') { if (j('up')) this.menu = (this.menu + 3) % 4; if (j('down')) this.menu = (this.menu + 1) % 4; if (j('pause')) { this.state = 'play'; if (G.Music) G.Music.duck(false); return; } if (j('start') || j('attack')) this.pauseChoose(this.menu); }
+    else if (this.state === 'gameover') { if (j('start') || j('attack')) { this.lives = 3; this.score = 0; this.carry = null; this.beginStage(this.stageIdx); } if (j('pause') || j('back')) { this.state = 'title'; } }
+    else if (this.state === 'stageclear') { if (j('start') || j('attack')) { this.beginStage(this.stageIdx + 1); A.play('go'); } }
     else if (this.state === 'victory') { if (j('start') || j('attack')) this.state = 'title'; }
   }
-  pauseChoose(i) { if (i === 0) this.state = 'play'; else if (i === 1) { this.lives = 3; this.score = Math.max(0, this.score); this.carry = null; this.startStage(this.stageIdx); } else if (i === 2) { this.menu = 2; this.showHelp = !this.showHelp; } else this.state = 'title'; A.play('ui'); }
+  pauseChoose(i) { if (G.Music) G.Music.duck(false); if (i === 0) this.state = 'play'; else if (i === 1) { this.lives = 3; this.score = Math.max(0, this.score); this.carry = null; this.beginStage(this.stageIdx); } else if (i === 2) { this.menu = 2; this.showHelp = !this.showHelp; } else this.state = 'title'; A.play('ui'); }
 }
 G.Game = Game;
 })(globalThis.GG = globalThis.GG || {});

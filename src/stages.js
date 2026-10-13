@@ -4,22 +4,22 @@
 const GW = 384, GH = 216, FLOOR_TOP = 134, FLOOR_BOT = 204;
 G.GW = GW; G.GH = GH; G.FLOOR_TOP = FLOOR_TOP; G.FLOOR_BOT = FLOOR_BOT;
 G.STAGES = [
-  { name: 'Skyline Plaza', tour: 'WORLD TOUR  -  STOP 1', len: 1700, theme: 'plaza', tokens: 2,
+  { name: 'Skyline Plaza', tour: 'WORLD TOUR  -  STOP 1', len: 1700, theme: 'plaza', tokens: 2, music: 'arcade',
     waves: [{ x: 200, e: [['exec', 'R'], ['guard', 'R']] }, { x: 560, e: [['guard', 'L'], ['guard', 'R'], ['exec', 'R']] }, { x: 930, e: [['exec', 'R'], ['exec', 'L'], ['heavy', 'R']] }, { x: 1290, boss: true, e: [['ledger', 'R', 0], ['guard', 'L', 240], ['guard', 'R', 360]] }],
     props: [['crate', 330, 170], ['barrel', 470, 150], ['bin', 760, 180], ['crate', 1060, 160], ['barrel', 1180, 190], ['boxes', 1480, 160]] },
-  { name: 'Harbor Docks', tour: 'WORLD TOUR  -  STOP 2', len: 1900, theme: 'docks', tokens: 2,
+  { name: 'Harbor Docks', tour: 'WORLD TOUR  -  STOP 2', len: 1900, theme: 'docks', tokens: 2, music: 'arcade',
     waves: [{ x: 200, e: [['brawler', 'R'], ['brawler', 'R'], ['brawler', 'L']] }, { x: 590, e: [['guard', 'R'], ['guard', 'L'], ['brawler', 'R'], ['brawler', 'L']] }, { x: 980, e: [['heavy', 'R'], ['brawler', 'L'], ['brawler', 'R']] }, { x: 1340, e: [['exec', 'R'], ['exec', 'L'], ['brawler', 'R'], ['raider', 'L']] }, { x: 1590, boss: true, e: [['bigtony', 'R', 0], ['brawler', 'L', 300]] }],
     props: [['crate', 300, 160], ['boxes', 520, 185], ['barrel', 760, 150], ['barrel', 860, 190], ['crate', 1130, 175], ['bin', 1250, 160], ['boxes', 1520, 190]] },
-  { name: 'Ashfall Pass', tour: 'WORLD TOUR  -  STOP 3', len: 2000, theme: 'pass', tokens: 3,
+  { name: 'Ashfall Pass', tour: 'WORLD TOUR  -  STOP 3', len: 2000, theme: 'pass', tokens: 3, music: 'kneel',
     waves: [{ x: 220, e: [['raider', 'R'], ['raider', 'L'], ['brawler', 'R']] }, { x: 620, e: [['raider', 'R'], ['raider', 'R'], ['raider', 'L']] }, { x: 1000, e: [['heavy', 'R'], ['raider', 'L'], ['raider', 'R'], ['brawler', 'L']] }, { x: 1400, e: [['raider', 'R'], ['raider', 'L'], ['raider', 'R'], ['heavy', 'L']] }, { x: 1690, boss: true, e: [['mara', 'R', 0], ['raider', 'L', 240], ['raider', 'R', 360]] }],
     props: [['barrel', 340, 170], ['crate', 560, 150], ['barrel', 800, 190], ['boxes', 1100, 160], ['barrel', 1250, 180], ['crate', 1500, 165]] },
-  { name: 'Gold Tower', tour: 'WORLD TOUR  -  FINAL STOP', len: 2200, theme: 'tower', tokens: 3,
+  { name: 'Gold Tower', tour: 'WORLD TOUR  -  FINAL STOP', len: 2200, theme: 'tower', tokens: 3, music: 'arcade',
     waves: [{ x: 220, e: [['exec', 'R'], ['exec', 'L'], ['guard', 'R'], ['guard', 'L']] }, { x: 600, e: [['heavy', 'R'], ['raider', 'L'], ['raider', 'R']] }, { x: 980, e: [['brawler', 'R'], ['brawler', 'L'], ['brawler', 'R'], ['exec', 'L'], ['exec', 'R']] }, { x: 1380, e: [['heavy', 'R'], ['heavy', 'L'], ['guard', 'R'], ['guard', 'L']] }, { x: 1890, boss: true, e: [['auditor', 'R', 0], ['guard', 'L', 400]] }],
     props: [['crate', 360, 160], ['bin', 560, 190], ['boxes', 820, 170], ['barrel', 1150, 150], ['crate', 1300, 185], ['bin', 1650, 165]] }
 ];
 function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
 const mkc = (w, h) => G.makeCanvas(w, h);
-function bands(c, y0, y1, cols, w) { const n = cols.length, h = (y1 - y0) / n; cols.forEach((col, i) => { c.fillStyle = col; c.fillRect(0, Math.floor(y0 + i * h), w, Math.ceil(h) + 1); }); }
+function bands(c, y0, y1, cols, w) { const g = c.createLinearGradient(0, y0, 0, y1); cols.forEach((col, i) => g.addColorStop(i / Math.max(1, cols.length - 1), col)); c.fillStyle = g; c.fillRect(0, Math.floor(y0), w, Math.ceil(y1 - y0) + 1); }
 function windows(c, x, y, w, h, on, off, r, gap) { for (let yy = y + 4; yy < y + h - 4; yy += gap) for (let xx = x + 4; xx < x + w - 4; xx += gap) { c.fillStyle = r() < .3 ? on : off; c.fillRect(xx, yy, gap - 3, gap - 3); } }
 G.buildBackdrop = function (st, idx) {
   const L = st.len, r = rng(77 + idx * 31), farW = Math.ceil(GW + (L - GW) * .2), midW = Math.ceil(GW + (L - GW) * .5);
@@ -77,6 +77,7 @@ G.buildBackdrop = function (st, idx) {
     for (let x = 60; x < L; x += 200) { R_(g, x, 70, 9, 64, '#2a2438'); R_(g, x - 2, 66, 13, 5, '#d4a31c'); R_(g, x - 2, 130, 13, 4, '#d4a31c'); R_(g, x + 3, 80, 3, 5, '#f6d060'); R_(g, x + 3, 96, 3, 5, '#f6d060'); R_(g, x + 3, 112, 3, 5, '#f6d060'); }
     R_(g, 0, 168, L, 36, 'rgba(120,20,30,.35)'); for (let x = 0; x < L; x += 90) R_(g, x, 168, 2, 36, 'rgba(212,163,28,.4)');
   }
-  return { far, mid, floor: flo };
+  const Zs = G.Z || 2.5, up = (c) => { const o = mkc(Math.round(c.width * Zs), Math.round(c.height * Zs)), x = o.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(c, 0, 0, o.width, o.height); return o; };
+  return { far: up(far), mid: up(mid), floor: up(flo) }; /* upscaled once; the 1x drawing code above is the layout source */
 };
 })(globalThis.GG = globalThis.GG || {});

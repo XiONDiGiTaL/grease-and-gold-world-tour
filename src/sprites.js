@@ -5,7 +5,8 @@
 'use strict';
 const HS = 1.2; /* head scale: big readable heads */
 const GS = 1.3; /* global character scale (bigger, more detailed sprites) */
-const CELL = 144, AX = 72, AY = 128, COLS = 8;
+const Z = 2.5; /* world render scale: game units -> device px (960x540 canvas) */
+const CELL = 360, AX = 180, AY = 320, COLS = 8;
 const hex = (h) => { const n = parseInt(h.slice(1), 16); return ((255 << 24) | ((n & 255) << 16) | (((n >> 8) & 255) << 8) | ((n >> 16) & 255)) >>> 0; };
 const OUT = hex('#1b1226');
 const shade = (c, f) => { const r = (c & 255) * f, g = ((c >> 8) & 255) * f, b = ((c >> 16) & 255) * f; return ((255 << 24) | (Math.min(255, b) << 16) | (Math.min(255, g) << 8) | Math.min(255, r)) >>> 0; };
@@ -82,9 +83,9 @@ Object.values(K).forEach(k => { const walk = (o) => { for (const key in o) { if 
 const hexOf = (s) => hex(s);
 
 /* ---------- poses ---------- */
-const BASE = { hip: [0, 25], lean: 4, head: 0, fF: [9, 0], fB: [-9, 0], hF: [12, 37], hB: [6, 35], wang: 60, ext: 0, legBend: [1, 0.1] };
+const BASE = { hip: [0, 25], lean: 4, head: 0, fF: [5, 0], fB: [-5, 0], hF: [12, 37], hB: [6, 35], wang: 60, ext: 0, legBend: [1, 0.1] };
 const P = (o) => Object.assign({}, BASE, o);
-const LEG = { fF: [16, 0], fB: [-11, 0] };
+const LEG = { fF: [12, 0], fB: [-8, 0] };
 
 function walkFrames(n, stride, lift, lean, hipDrop, hipY, armSw) {
   const out = [];
@@ -99,8 +100,8 @@ const spinFrames = (n, f) => { const o = []; for (let i = 0; i < n; i++) o.push(
 
 const COMMON = {
   idle: (w) => [P({ wang: w }), P({ wang: w, hF: [12, 38], hB: [6, 36] }), P({ wang: w, hF: [12, 38], hB: [6, 36], lean: 5 }), P({ wang: w, lean: 5 })],
-  walk: (w) => walkFrames(8, 10, 6, 6, 1.5, 25, 5).map(p => (p.wang = w, p)),
-  run: (w) => walkFrames(6, 14, 10, 18, 2, 24, 8).map(p => (p.wang = w, p.hF = [10 + (p.hF[0] - 11) * 1.2, 34], p)),
+  walk: (w) => walkFrames(8, 8, 5, 5, 1.2, 25, 4).map(p => (p.wang = w, p)),
+  run: (w) => walkFrames(6, 11, 8, 14, 1.8, 24, 6).map(p => (p.wang = w, p.hF = [10 + (p.hF[0] - 11) * 1.2, 34], p)),
   jump: () => [P({ hip: [0, 22], lean: 6, fF: [11, 11], fB: [-6, 7], hF: [14, 44], hB: [4, 47] }), P({ hip: [0, 22], lean: 4, fF: [9, 9], fB: [-8, 11], hF: [13, 40], hB: [2, 44] }), P({ hip: [0, 24], lean: 2, fF: [7, 1], fB: [-7, 0], hF: [12, 42], hB: [2, 40] })],
   land: () => [P({ hip: [0, 19], lean: 18, fF: [12, 0], fB: [-10, 0], hF: [14, 27], hB: [6, 25] })],
   hit: () => [P({ hip: [-3, 24], lean: -12, head: -12, fF: [8, 0], fB: [-12, 0], hF: [8, 40], hB: [-8, 36] }), P({ hip: [-2, 24], lean: -7, head: -6, fF: [9, 0], fB: [-11, 0], hF: [9, 31], hB: [-5, 30] })],
@@ -125,7 +126,7 @@ ATK.mic = {
   a3: () => SLAM(0),
   jatk: () => [P({ hip: [0, 26], lean: 10, fF: [14, 14], fB: [-6, 8], hF: [22, 36], hB: [8, 40], wang: 5, ext: 12 }), P({ hip: [0, 26], lean: 10, fF: [15, 13], fB: [-6, 8], hF: [23, 35], hB: [8, 40], wang: 0, ext: 14 })],
   jdown: () => [P({ hip: [2, 24], lean: 24, fF: [10, 12], fB: [-4, 14], hF: [20, 24], hB: [14, 28], wang: -80, ext: 6 }), P({ hip: [2, 24], lean: 26, fF: [10, 12], fB: [-4, 14], hF: [20, 22], hB: [14, 26], wang: -85, ext: 8 })],
-  special: () => spinFrames(6, (i, a) => P({ hip: [0, 22], lean: 6, fF: [13, 0], fB: [-13, 0], hF: [3 + 12 * Math.cos(rad(a)), 38 + 8 * Math.sin(rad(a))], hB: [-5, 36], wang: a, ext: 18 }))
+  special: () => spinFrames(6, (i, a) => P({ hip: [0, 22], lean: 6, fF: [10, 0], fB: [-10, 0], hF: [3 + 12 * Math.cos(rad(a)), 38 + 8 * Math.sin(rad(a))], hB: [-5, 36], wang: a, ext: 18 }))
 };
 function SLAM(w) {
   return [P({ hip: [-1, 24], lean: -4, hF: [5, 56], hB: [2, 54], wang: 100 + w, fF: [10, 0], fB: [-10, 0] }), P({ hip: [0, 25], lean: -8, hF: [7, 60], hB: [3, 58], wang: 100 + w, fF: [10, 0], fB: [-10, 0] }),
@@ -137,7 +138,7 @@ ATK.flag = {
   a3: () => { const f = SLAM(-5); f[2] = Object.assign({}, f[2], { hF: [23, 32], wang: -48 }); f[3] = Object.assign({}, f[3], { hF: [25, 31], wang: -52 }); return f; },
   jatk: () => [P({ hip: [0, 26], lean: 10, fF: [14, 14], fB: [-6, 8], hF: [20, 32], hB: [8, 40], wang: -30 }), P({ hip: [0, 26], lean: 10, fF: [15, 13], fB: [-6, 8], hF: [21, 31], hB: [8, 40], wang: -34 })],
   jdown: () => [P({ hip: [2, 24], lean: 24, fF: [10, 12], fB: [-4, 14], hF: [20, 32], hB: [14, 30], wang: -72 }), P({ hip: [2, 24], lean: 26, fF: [10, 12], fB: [-4, 14], hF: [20, 31], hB: [14, 29], wang: -78 })],
-  special: () => spinFrames(6, (i, a) => P({ hip: [0, 22], lean: 4, fF: [13, 0], fB: [-13, 0], hF: [8, 44], hB: [4, 40], wang: a }))
+  special: () => spinFrames(6, (i, a) => P({ hip: [0, 22], lean: 4, fF: [10, 0], fB: [-10, 0], hF: [8, 44], hB: [4, 40], wang: a }))
 };
 ATK.salami = {
   a1: () => [P({ hip: [-2, 25], lean: -6, hF: [2, 40], wang: 115, ...LEG, fF: [8, 0] }), P({ hip: [3, 24], lean: 12, hF: [19, 34], wang: 15, ...LEG, head: 6 }), P({ hip: [3, 24], lean: 13, hF: [20, 33], wang: 8, ...LEG, head: 6 }), P({ hip: [1, 25], lean: 6, hF: [14, 36], wang: 40, ...LEG })],
@@ -346,18 +347,20 @@ function renderKit(id, isPlayer) {
   return { id, kit: k, frames, rigs, poses };
 }
 const PLAYERS = ['ricky', 'vv', 'johnny'], ENEMIES = ['guard', 'exec', 'heavy', 'brawler', 'raider', 'ledger', 'bigtony', 'mara', 'auditor'];
-function portrait(rk) { const r = rk.rigs.idle[0].head, b = rk.frames.idle[0], o = new Buf(40, 40); for (let y = 0; y < 40; y++) for (let x = 0; x < 40; x++) o.set(x, y, b.get(Math.round(r[0]) - 20 + x, Math.round(r[1]) - 19 + y)); return o; }
+function portrait(rk) { const r = rk.rigs.idle[0].head, b = rk.frames.idle[0], o = new Buf(100, 100); for (let y = 0; y < 100; y++) for (let x = 0; x < 100; x++) o.set(x, y, b.get(Math.round(r[0]) - 50 + x, Math.round(r[1]) - 46 + y)); return o; }
 
 /* ---------- props, food, fx ---------- */
 const C = hex;
 function decodeArt(a) { const b = new Buf(a.w, a.h), bin = typeof atob !== 'undefined' ? atob(a.data) : Buffer.from(a.data, 'base64').toString('binary'), pal = a.pal.map(h => hex('#' + h)); for (let i = 0; i < bin.length; i++) { const v = bin.charCodeAt(i); if (v) b.d[i] = pal[v - 1]; } return b; }
+/* wrapper that lets the 1x prop/fx drawing code paint at Z x resolution */
+function scaled(B) { const q = (v) => Math.round(v * Z); return { rect: (x, y, w, h, c) => B.rect(q(x), q(y), Math.max(1, q(x + w) - q(x)), Math.max(1, q(y + h) - q(y)), c), ell: (cx, cy, rx, ry, c) => B.ell(cx * Z, cy * Z, rx * Z, ry * Z, c), disk: (cx, cy, r, c) => B.disk(cx * Z, cy * Z, r * Z, c), line: (a, b2, r, c) => B.line([a[0] * Z, a[1] * Z], [b2[0] * Z, b2[1] * Z], r * Z, c), set: (x, y, c) => B.rect(q(x), q(y), Math.max(1, q(x + 1) - q(x)), Math.max(1, q(y + 1) - q(y)), c) }; }
 function makeProp(type) {
-  const b = new Buf(34, 36), hl = (c) => shade(c, 1.28), sd = (c) => shade(c, .72);
+  const R0 = new Buf(Math.round(34 * Z), Math.round(36 * Z)), b = scaled(R0), hl = (c) => shade(c, 1.28), sd = (c) => shade(c, .72);
   if (type === 'crate') { const w = C('#b07a36'); b.rect(3, 8, 28, 26, w); for (let y = 8; y < 34; y += 5) { b.rect(3, y, 28, 1, sd(w)); } b.rect(3, 8, 28, 3, hl(w)); for (let i = 0; i < 9; i++) b.rect(5 + (i * 7) % 24, 12 + (i * 5) % 20, 3, 1, hl(w)); b.rect(3, 8, 4, 26, C('#8a5a25')); b.rect(27, 8, 4, 26, C('#8a5a25')); b.rect(3, 8, 28, 3, C('#c98d45')); b.rect(3, 31, 28, 3, C('#8a5a25')); b.line([6, 11], [27, 31], .8, C('#6a4219')); b.line([27, 11], [6, 31], .8, C('#6a4219')); [[4, 9], [28, 9], [4, 31], [28, 31]].forEach(q => b.rect(q[0], q[1], 2, 2, C('#e8d8a8'))); b.rect(11, 17, 12, 8, C('#2a2236')); b.rect(12, 18, 10, 6, C('#f0c43c')); b.rect(14, 20, 6, 2, C('#7a5410')); }
   if (type === 'barrel') { const w = C('#3b6aa8'); b.ell(17, 18, 11, 16, w); b.rect(6, 8, 22, 21, w); b.rect(6, 8, 5, 21, hl(w)); b.rect(11, 8, 3, 21, shade(w, 1.12)); b.rect(24, 8, 4, 21, sd(w)); b.ell(17, 8, 11, 4, C('#7aa9e0')); b.ell(17, 8, 8, 2.5, C('#5a86c0')); [10, 18, 27].forEach(y => { b.rect(5, y, 24, 2, C('#a8b0c0')); b.rect(5, y, 24, 1, C('#d8dde8')); }); b.rect(11, 13, 12, 5, C('#f0c43c')); for (let i = 0; i < 4; i++) b.rect(12 + i * 3, 13, 2, 5, i % 2 ? C('#2a2236') : C('#f0c43c')); b.rect(8, 22, 2, 5, C('#8a4a20')); b.rect(25, 24, 2, 3, C('#8a4a20')); }
   if (type === 'bin') { const m = C('#7d8590'); b.rect(5, 10, 24, 25, m); b.rect(5, 10, 5, 25, hl(m)); b.rect(25, 10, 4, 25, sd(m)); for (let i = 0; i < 5; i++) { b.rect(10 + i * 4, 14, 2, 19, sd(m)); b.rect(11 + i * 4, 14, 1, 19, hl(m)); } b.ell(17, 10, 13, 4, C('#aab2be')); b.ell(17, 10, 10, 2.5, C('#8a929e')); b.rect(3, 7, 28, 3, C('#b4bcc8')); b.rect(3, 7, 28, 1, C('#e0e5ee')); b.rect(8, 4, 18, 3, C('#5a626d')); b.rect(4, 22, 2, 8, C('#4a525d')); b.rect(11, 28, 12, 4, C('#d8c8a0')); b.rect(12, 26, 4, 3, C('#a85a3a')); }
   if (type === 'boxes') { const c1 = C('#c49a5a'), c2 = C('#b98a4c'); b.rect(2, 18, 18, 16, c1); b.rect(2, 18, 18, 3, hl(c1)); b.rect(8, 18, 5, 16, C('#d8c090')); b.rect(2, 31, 18, 3, sd(c1)); b.rect(15, 4, 17, 15, c2); b.rect(15, 4, 17, 3, hl(c2)); b.rect(21, 4, 5, 15, C('#d8c090')); b.rect(15, 16, 17, 3, sd(c2)); b.rect(18, 22, 14, 12, C('#a8793f')); b.rect(18, 22, 14, 3, C('#c8995a')); b.rect(21, 27, 8, 5, C('#f6efe0')); b.rect(22, 28, 6, 1, C('#8a3030')); b.rect(22, 30, 4, 1, C('#555')); }
-  b.outline(OUT); return b;
+  R0.outline(OUT); R0.outline(OUT); return R0;
 }
 const PROP_BASE = 35; // bottom row offset
 function plate(b, cx, cy) { b.ell(cx, cy + 1, 16.5, 9.5, C('#b8862a')); b.ell(cx, cy, 16.5, 9.2, C('#e8b83c')); b.ell(cx, cy, 14.8, 8, C('#f6f2ea')); b.ell(cx, cy + .6, 11, 5.6, C('#e3dfd3')); }
@@ -387,20 +390,20 @@ function makeFx() {
   return fx;
 }
 
-/* ---------- atlas packing ---------- */
-function packGame(rk, mk) { // dense 8-col sheet used in game
-  const names = Object.keys(rk.frames), index = {}; let n = 0;
-  names.forEach(a => { index[a] = { start: n, n: rk.frames[a].length }; n += rk.frames[a].length; });
-  const rows = Math.ceil(n / COLS), cv = mk(COLS * CELL, rows * CELL), ctx = cv.getContext('2d');
-  names.forEach(a => rk.frames[a].forEach((b, i) => { const idx = index[a].start + i; ctx.drawImage(b.toCanvas(mk), (idx % COLS) * CELL, Math.floor(idx / COLS) * CELL); }));
-  return { canvas: cv, index, cols: COLS };
+/* ---------- atlas packing (trimmed frames, shelf packed) ---------- */
+function pack(rk, mk) {
+  const W = 2048, pad = 2, tiles = [], frames = {}; let x = 0, y = 0, rowH = 0;
+  for (const a in rk.frames) { frames[a] = []; rk.frames[a].forEach((b) => { const bb = b.bbox(); const e = bb.x1 < 0 ? { x0: 0, y0: 0, x1: 0, y1: 0 } : bb, w = e.x1 - e.x0 + 1, h = e.y1 - e.y0 + 1; if (x + w + pad > W) { x = 0; y += rowH + pad; rowH = 0; } const f = { x, y, w, h, ox: e.x0 - AX, oy: e.y0 - AY }; frames[a].push(f); tiles.push({ b, e, f }); x += w + pad; rowH = Math.max(rowH, h); }); }
+  const H = y + rowH + pad, cv = mk(W, H), ctx = cv.getContext('2d');
+  tiles.forEach(({ b, e, f }) => { const id = ctx.createImageData(f.w, f.h), u = new Uint32Array(id.data.buffer); for (let j = 0; j < f.h; j++) for (let i = 0; i < f.w; i++) u[j * f.w + i] = b.d[(e.y0 + j) * b.w + e.x0 + i]; ctx.putImageData(id, f.x, f.y); });
+  return { canvas: cv, frames };
 }
-function packRows(rk, mk) { // artist sheet: one animation per row
+function packRows(rk, mk) { // artist sheet: one animation per row, full cells
   const names = Object.keys(rk.frames), rows = {}, cv = mk(COLS * CELL, names.length * CELL), ctx = cv.getContext('2d');
   names.forEach((a, r) => { rows[a] = { row: r, n: rk.frames[a].length }; rk.frames[a].forEach((b, i) => ctx.drawImage(b.toCanvas(mk), i * CELL, r * CELL)); });
   return { canvas: cv, rows };
 }
 
-G.GS = GS;
-G.Sprites = { drawWeapon, GS, CELL, AX, AY, COLS, K, TIMING, PLAYERS, ENEMIES, PLAYER_ANIMS, ENEMY_ANIMS, Buf, renderKit, packGame, packRows, portrait, makeProp, makeFood, makeEmptyPlate, makeFx, figure, buildPoses, ik };
+G.GS = GS; G.Z = Z;
+G.Sprites = { pack, Z, drawWeapon, GS, CELL, AX, AY, COLS, K, TIMING, PLAYERS, ENEMIES, PLAYER_ANIMS, ENEMY_ANIMS, Buf, renderKit, packRows, portrait, makeProp, makeFood, makeEmptyPlate, makeFx, figure, buildPoses, ik };
 })(typeof globalThis !== 'undefined' ? (globalThis.GG = globalThis.GG || {}) : window.GG);
