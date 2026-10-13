@@ -47,14 +47,15 @@ func _initialize() -> void:
   var bad := []
   for id in D.players + D.enemies:
     var tex: Texture2D = load("res://assets/sprites/%s.png" % id)
-    if tex == null or tex.get_width() != 8 * int(D.cell):
+    if tex == null or tex.get_width() != 2048:
       bad.append(id)
     for a in D.atlas[id]:
-      if not g.TIMING.has(a) or int(D.atlas[id][a].n) != g.TIMING[a].size():
+      if not g.TIMING.has(a) or D.atlas[id][a].size() != g.TIMING[a].size():
         bad.append(id + ":" + a)
-      if (int(D.atlas[id][a].row) + 1) * int(D.cell) > tex.get_height():
-        bad.append(id + ":" + a + ":row")
-  ok(bad.is_empty(), "every sprite sheet loads, is 8 columns of 112px, and atlas frame counts match animation timing", bad)
+      for fr in D.atlas[id][a]:
+        if fr.y + fr.h > tex.get_height() or fr.x + fr.w > tex.get_width():
+          bad.append(id + ":" + a + ":rect")
+  ok(bad.is_empty(), "every sprite atlas loads (2048 wide), frame counts match the animation timing, and every frame rect lies inside the atlas", bad)
   ok(g.renderer != null and g.renderer.sheets.size() == 12 and g.renderer.bgs.size() == 4, "renderer loaded all sheets and 4 stage backdrops")
   print("== gameplay")
   var p = fresh("ricky")

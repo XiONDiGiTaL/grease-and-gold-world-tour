@@ -58,6 +58,9 @@ var next_id := 1
 var sfx := {}
 var sfx_players: Array = []
 var renderer: Node2D
+var music: AudioStreamPlayer
+var music_streams := {}
+var music_cur := ""
 
 const GRAV := 0.24
 const JUMPV := 4.7
@@ -76,6 +79,14 @@ func _ready() -> void:
     edge[b] = false
   _setup_input_map()
   _make_sfx()
+  music = AudioStreamPlayer.new()
+  music.volume_db = -6.0
+  add_child(music)
+  for pair in [["arcade", "res://assets/arcade_tune.mp3"], ["kneel", "res://assets/i_dont_kneel.mp3"]]:
+    var st := AudioStreamMP3.new()
+    st.data = FileAccess.get_file_as_bytes(pair[1])
+    st.loop = true
+    music_streams[pair[0]] = st
   var rs = load("res://scripts/render.gd")
   renderer = rs.new()
   renderer.game = self
@@ -119,6 +130,7 @@ func _poll_real() -> void:
     set_btn(b, Input.is_action_pressed(b))
   if Input.is_key_pressed(KEY_M) and not _m_down:
     mute = not mute
+    music.stream_paused = mute
   _m_down = Input.is_key_pressed(KEY_M)
 var _m_down := false
 
@@ -215,6 +227,17 @@ func _make_sfx() -> void:
     var p := AudioStreamPlayer.new()
     add_child(p)
     sfx_players.append(p)
+func play_music(name: String) -> void:
+  if music_cur == name or not music_streams.has(name):
+    return
+  music_cur = name
+  music.stream = music_streams[name]
+  music.play()
+func stop_music() -> void:
+  music_cur = ""
+  music.stop()
+func duck_music(d: bool) -> void:
+  music.volume_db = -18.0 if d else -6.0
 func play(n: String) -> void:
   if mute or not sfx.has(n):
     return
@@ -298,6 +321,7 @@ func start_stage(i: int) -> void:
   var st: Dictionary = D.STAGES[i]
   stage_idx = i
   stage = st
+  play_music(String(st.get("music", "arcade")))
   reset_world()
   var p := make_player(char_id)
   if carry != null:
@@ -353,6 +377,7 @@ func update_play() -> void:
     state = "pause"
     menu = 0
     play("ui")
+    duck_music(true)
     return
   if hitstop > 0:
     hitstop -= 1
@@ -771,6 +796,7 @@ func player_died(p: Dictionary) -> void:
     state = "gameover"
     menu = 0
     play("ko")
+    stop_music()
     return
   p.lives = lives
   p.hp = p.maxhp
@@ -1282,7 +1308,7 @@ func pickup_check(p: Dictionary) -> void:
       p.hp = min(p.maxhp, p.hp + float(f.heal))
       score += 100
       play("pick")
-      parts.append({"type": "plate", "x": it.x, "y": it.y, "z": 8.0, "vz": 0.5, "life": 40, "age": 0})
+      parts.append({"type": "foodghost", "food": it.type, "x": it.x, "y": it.y, "z": 4.0, "vz": 0.45, "life": 34, "age": 0})
       parts.append({"type": "glow", "x": it.x, "y": it.y, "z": 14.0, "life": 18, "age": 0})
       parts.append({"type": "text", "x": it.x, "y": it.y, "z": 26.0, "vz": 0.6, "life": 56, "age": 0, "s": "+100"})
       for i in 6:
@@ -1399,6 +1425,7 @@ func update_menus() -> void:
       if just("start") or just("attack") or just("jump"):
         state = "select"
         play("ui")
+        play_music("arcade")
     "select":
       var ids: Array = D.players
       if just("left"):
@@ -1419,6 +1446,7 @@ func update_menus() -> void:
         menu = (menu + 1) % 4
       if just("pause"):
         state = "play"
+        duck_music(false)
         return
       if just("start") or just("attack"):
         pause_choose(menu)
@@ -1439,6 +1467,7 @@ func update_menus() -> void:
         state = "title"
 
 func pause_choose(i: int) -> void:
+  duck_music(false)
   if i == 0:
     state = "play"
   elif i == 1:

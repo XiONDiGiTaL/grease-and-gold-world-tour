@@ -2,9 +2,7 @@ extends Node2D
 ## Draws the world (pixel-snapped, feet anchored at the sprite's (56,100)) and the UI. Mirrors src/ui.js.
 
 var game
-var CELL := 144
-var AX := 72
-var AY := 128
+var Z := 2.5
 const GW := 384
 const GH := 216
 const GOLD := Color("f2b630")
@@ -34,15 +32,13 @@ func _ready() -> void:
   ff.hinting = TextServer.HINTING_NONE
   font = ff
   var D = game.D
-  CELL = int(D.cell)
-  AX = int(D.anchor[0])
-  AY = int(D.anchor[1])
+  Z = float(D.Z)
   for id in D.players + D.enemies:
     sheets[id] = _tex("assets/sprites/%s.png" % id)
     portraits[id] = _tex("assets/sprites/%s_portrait.png" % id)
   for t in ["crate", "barrel", "bin", "boxes"]:
     props_tex[t] = _tex("assets/prop_%s.png" % t)
-  for t in ["adana", "shish", "doner", "lahmacun", "kunefe", "spit", "empty"]:
+  for t in ["adana", "shish", "doner", "lahmacun", "kunefe", "spit"]:
     food_tex[t] = _tex("assets/food_%s.png" % t)
   for n in ["spark", "boom", "dust", "sparkle"]:
     fx[n] = [_tex("assets/fx_%s0.png" % n), _tex("assets/fx_%s1.png" % n), _tex("assets/fx_%s2.png" % n)]
@@ -83,17 +79,22 @@ func shadow(x: float, y: float, w: float, a: float) -> void:
     var ww := roundf(w * rows[i])
     draw_rect(Rect2(x - floorf(ww / 2.0), y - 2 + i, ww, 1), Color(0.03, 0.016, 0.06, a))
 
+func snap(v: float) -> float:
+  return roundf(v * Z) / Z
+
 func draw_fighter(e: Dictionary, ox: float, oy: float) -> void:
   var at: Dictionary = game.D.atlas[e.kitId]
-  var a: Dictionary = at.get(e.anim, at.idle)
-  var fr: int = mini(int(e.frame), int(a.n) - 1)
-  var src := Rect2(fr * CELL, int(a.row) * CELL, CELL, CELL)
-  var x := roundf(e.x - game.cam_x) + ox
-  var y := roundf(e.y - e.z) + oy
+  var frs: Array = at.get(e.anim, at.idle)
+  var f: Dictionary = frs[mini(int(e.frame), frs.size() - 1)]
+  var x := snap(e.x - game.cam_x) + ox
+  var y := snap(e.y - e.z) + oy
   draw_set_transform(Vector2(x, y), 0.0, Vector2(-1 if e.face < 0 else 1, 1))
   var mod := Color(3, 3, 3, 1) if e.flash > 0 else Color(1, 1, 1, 1)
-  draw_texture_rect_region(sheets[e.kitId], Rect2(-AX, -AY, CELL, CELL), src, mod)
+  draw_texture_rect_region(sheets[e.kitId], Rect2(f.ox / Z, f.oy / Z, f.w / Z, f.h / Z), Rect2(f.x, f.y, f.w, f.h), mod)
   draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func bgdraw(tex: Texture2D, px: float, py: float) -> void:
+  draw_texture_rect(tex, Rect2(px, py, tex.get_width() / Z, tex.get_height() / Z), false)
 
 func _draw() -> void:
   if game == null:
@@ -122,9 +123,9 @@ func draw_title_bg() -> void:
   var si := 0 if game.state == "title" else 3
   var sc: float = fmod(game.t * 0.3, 600.0)
   var b = bgs[si]
-  draw_texture(b[0], Vector2(-floorf(sc * 0.2), 0))
-  draw_texture(b[1], Vector2(-floorf(sc * 0.5), 0))
-  draw_texture(b[2], Vector2(-floorf(sc), 0))
+  bgdraw(b[0], -floorf(sc * 0.2), 0)
+  bgdraw(b[1], -floorf(sc * 0.5), 0)
+  bgdraw(b[2], -floorf(sc), 0)
   draw_rect(Rect2(0, 0, GW, GH), Color(0.055, 0.024, 0.094, 0.55))
   if game.state == "title":
     var ids := ["ricky", "vv", "johnny"]
@@ -144,9 +145,9 @@ func draw_world() -> void:
     oy = roundf((randf() * 2.0 - 1.0) * game.shake * 0.6)
   draw_rect(Rect2(0, 0, GW, GH), Color.BLACK)
   var b = bgs[game.stage_idx]
-  draw_texture(b[0], Vector2(-floorf(cam * 0.2) + ox, oy))
-  draw_texture(b[1], Vector2(-floorf(cam * 0.5) + ox, oy))
-  draw_texture(b[2], Vector2(-cam + ox, oy))
+  bgdraw(b[0], -floorf(cam * 0.2) + ox, oy)
+  bgdraw(b[1], -floorf(cam * 0.5) + ox, oy)
+  bgdraw(b[2], -cam + ox, oy)
   var list: Array = []
   for o in game.props:
     list.append({"o": o, "y": o.y, "k": "prop"})
@@ -181,7 +182,8 @@ func draw_world() -> void:
       var off := 0
       if o.shake > 0:
         off = 1 if (o.shake & 1) == 1 else -1
-      draw_texture(props_tex[o.type], Vector2(x - 17 + off, y - 35))
+      var pt: Texture2D = props_tex[o.type]
+      draw_texture_rect(pt, Rect2(x - pt.get_width() / Z / 2.0 + off, y - pt.get_height() / Z + 1, pt.get_width() / Z, pt.get_height() / Z), false)
     elif q.k == "item":
       draw_item(o, x, y)
     elif q.k == "proj":
@@ -219,11 +221,17 @@ func draw_world() -> void:
       "debris":
         draw_rect(Rect2(x - 2, y - 2, 5, 5), INK)
         draw_rect(Rect2(x - 1, y - 1, 3, 3), Color(p.c))
-      "plate":
-        draw_texture(food_tex.empty, Vector2(x - 18, y - 26), Color(1, 1, 1, minf(1.0, p.life / 20.0)))
+      "foodghost":
+        var ft: Texture2D = food_tex[p.food]
+        var kk := 1.0 + age * 0.012
+        var fw := ft.get_width() / Z * kk
+        var fh := ft.get_height() / Z * kk
+        draw_texture_rect(ft, Rect2(x - fw / 2.0, y - fh + 3, fw, fh), false, Color(1, 1, 1, clampf(p.life / 24.0, 0.0, 1.0)))
       "glow":
         var r := 1.0 + age * 0.08
-        draw_texture_rect(fx.glow, Rect2(x - 15 * r, y - 15 * r, 30 * r, 30 * r), false, Color(1, 1, 1, minf(1.0, p.life / 10.0)))
+        var gw: float = fx.glow.get_width() / Z * r * 1.6
+        var gh: float = fx.glow.get_height() / Z * r * 1.6
+        draw_texture_rect(fx.glow, Rect2(x - gw / 2.0, y - gh / 2.0, gw, gh), false, Color(1, 1, 1, minf(1.0, p.life / 10.0)))
       "sparkle":
         draw_texture(fx.sparkle[(age >> 2) % 3], Vector2(x - 4, y - 4))
       "text":
@@ -235,13 +243,13 @@ func draw_item(o: Dictionary, x: float, y: float) -> void:
   if o.z <= 0.0:
     bob = roundi(sin(o.t * 0.12) * 2.0) + 4
   var zz := roundf(o.z) + bob
-  var w := im.get_width()
-  var h := im.get_height()
+  var w := im.get_width() / Z
+  var h := im.get_height() / Z
   if o.life < 180 and ((o.life >> 2) & 1) == 1:
     return
   var gl := 0.28 + 0.14 * sin(o.t * 0.15)
-  draw_circle(Vector2(x, y - zz - h * 0.45), w * 0.5, Color(1, 0.84, 0.35, gl))
-  draw_texture(im, Vector2(x - (w >> 1), y - zz - h + 3))
+  draw_circle(Vector2(x, y - zz - h * 0.45), w * 0.52, Color(1, 0.84, 0.35, gl))
+  draw_texture_rect(im, Rect2(x - w / 2.0, y - zz - h + 3, w, h), false)
   for k in 3:
     var ph: int = (o.t + k * 23) % 70
     if ph < 14:
@@ -287,8 +295,8 @@ func ui_title() -> void:
   txt("WORLD TOUR", GW / 2.0, 90, 16, CREAM, 1)
   if ((game.t >> 5) & 1) == 1:
     txt("PRESS ENTER / START", GW / 2.0, 116, 8, CREAM, 1)
-  txt("J ATTACK  K JUMP  L SPECIAL  U GRAB", GW / 2.0, 211, 6, DIM, 1)
-  txt("GODOT PORT - PLAYTEST BUILD", GW / 2.0, 216, 6, Color("6a5a80"), 1)
+  txt("J ATTACK  K JUMP  L SPECIAL  U GRAB", GW / 2.0, 203, 6, DIM, 1)
+  txt("(C) GREASE & GOLD RECORDS", GW / 2.0, 213, 6, Color("6a5a80"), 1)
 
 func ui_select() -> void:
   txt("SELECT YOUR FIGHTER", GW / 2.0, 13, 8, GOLD, 1)
@@ -300,9 +308,10 @@ func ui_select() -> void:
     var y := 19.0
     var sl: bool = i == game.sel
     frame(x, y, 112, 186, GOLD if sl else Color("5a4a6a"))
-    var a: Dictionary = game.D.atlas[d.kit].idle
-    var fr: int = (game.t / 14) % 4 if sl else 0
-    draw_texture_rect_region(sheets[d.kit], Rect2(cx - 52, y + 3, 104, 104), Rect2(fr * CELL + AX - 52, int(a.row) * CELL + AY - 100, 104, 104), Color(1, 1, 1, 1.0 if sl else 0.55))
+    var frs: Array = game.D.atlas[d.kit].idle
+    var f: Dictionary = frs[(game.t / 14) % frs.size() if sl else 0]
+    var sk := 0.95 / Z
+    draw_texture_rect_region(sheets[d.kit], Rect2(cx + f.ox * sk, y + 110 + f.oy * sk, f.w * sk, f.h * sk), Rect2(f.x, f.y, f.w, f.h), Color(1, 1, 1, 1.0 if sl else 0.55))
     txt(String(d.name).to_upper(), cx, y + 120, 8, GOLD2 if sl else CREAM, 1)
     txt(String(d.weapon).to_upper().substr(0, 18), cx, y + 129, 6, DIM, 1)
     txt(String(d.special).to_upper(), cx, y + 141, 6, MAG, 1)
