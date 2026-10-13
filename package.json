@@ -1,15 +1,19 @@
 {
-  "name": "grease-and-gold",
+  "name": "grease-and-gold-world-tour",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "node tools/build.js",
+    "test": "node tests/run.js",
+    "sprites": "node tools/export_sprites.js",
+    "godot-data": "node tools/export_godot_data.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@napi-rs/canvas": "^1.0.11"
-  }
+  },
+  "playVersion": 10
 }
