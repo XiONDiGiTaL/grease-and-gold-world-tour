@@ -12,7 +12,7 @@ const ART = {};
 function art(name) {
   if (ART[name]) return ART[name]; const A = G.RIGART[name]; const pal = A.pal.map(h => [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]); const parts = {};
   for (const [n, p] of Object.entries(A.parts)) { const d = b64(p.d), c = b64(p.c), idx = new Uint8Array(d.length), cl = new Uint8Array(c.length); for (let i = 0; i < d.length; i++) { idx[i] = d.charCodeAt(i); cl[i] = c.charCodeAt(i); } parts[n] = { x: p.x, y: p.y, w: p.w, h: p.h, idx, cl }; }
-  const J = A.joints; const top = Math.min(...Object.values(parts).filter((_, i) => true).map(p => p.y)); const bottom = J.soleB[1];
+  const J = A.joints; const top = parts.head ? parts.head.y : Math.min(...Object.values(parts).map(p => p.y)); const bottom = J.soleB[1];
   return ART[name] = { pal, parts, J, H: bottom - top };
 }
 const rgb2hsv = (r, g, b) => { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; let h = 0; if (d) { if (mx === r) h = ((g - b) / d) % 6; else if (mx === g) h = (b - r) / d + 2; else h = (r - g) / d + 4; } return [((h * 60) + 360) % 360, mx ? d / mx : 0, mx]; };
@@ -28,9 +28,9 @@ const CLS = ['', 'skin', 'coat', 'fleece', 'shirt', 'pants', 'shoes', 'hair', 's
 /* ---- kit variants (recolour + head variant + width) ---- */
 const SK = { h: 22, s: .45, vMul: .95 };
 const V = {
-  ricky: { art: 'ricky', hs: 1.0 },
-  vv: { art: 'vv', hs: 1.0 },
-  johnny: { art: 'ricky', tint: { skin: { h: 24, s: .58, vMul: .66 }, coat: { h: 212, s: .5, vMul: .9 }, fleece: { h: 208, s: .28, vMul: 1.0 }, shirt: { vMap: [.8, .9], s: 0 }, pants: { h: 208, s: .36, vMap: [.42, 2.3] }, shoes: { s: .05, vMap: [.62, .8] }, hair: { vMul: 1.0 }, shades: { fill: [18, 20, 26] }, mustache: { vMul: 1 } }, head: 'afro', weapon: 'salami' },
+  ricky: { art: 'ricky', pw: 'flag', restW: 90, ws: 1.45, tint: { pants: { h: 235, s: .25, vMul: .62 } } },
+  vv: { art: 'vv', pw: 'mic', restW: 114, ws: 1.3, tint: { hair: { h: 30, s: .52, vMul: 1.32 } } },
+  johnny: { art: 'johnny', pw: 'salami', restW: 53, ws: .66, twoHand: 88, stanceX: 2.7, weapon: 'salami' },
   mara: { art: 'vv', tint: { coat: { h: 350, s: .66, vMul: 1.15 }, hair: { h: 18, s: .5, vMul: .62 }, pants: { h: 24, s: .5, vMap: [0, 1.7] }, skin: { h: 22, s: .45, vMul: .92 } } },
 };
 
@@ -102,25 +102,30 @@ function renderFrame(id, pose, anim) {
   const K = kitPieces(id), A = K.A, J = A.J, f = K.f, P = K.P, k = S.K[id], s = k.scale * Z, v = K.v;
   const lean = rad(pose.lean), cl = Math.cos(lean), sl = Math.sin(lean), HW = CELL * SS, hi = new Float32Array(HW * HW * 4);
   const L = (a, b) => dist(J[a], J[b]) * f;
-  const Lth = (L('hipB', 'knB') + L('hipF', 'knF')) / 2, Lsh = (L('knB', 'anB') + L('knF', 'anF')) / 2, ankH = (J.soleB[1] - J.anB[1]) * f, lamL = (Lth + Lsh + ankH) / (26 * s);
+  const Lth = (L('hipB', 'knB') + L('hipF', 'knF')) / 2, Lsh = (L('knB', 'anB') + L('knF', 'anF')) / 2, totB = L('hipB', 'knB') + L('knB', 'anB') + (J.soleB[1] - J.anB[1]) * f, totF = L('hipF', 'knF') + L('knF', 'anF') + (J.soleF[1] - J.anF[1]) * f, lamL = Math.min(totB, totF) / (26 * s); /* both legs must reach the ground: size to the shorter */
   const upperLen = dist(J.shN, J.elN) * f, foreN = dist(J.elN, J.haN) * f, foreF = dist(J.elF, J.haF) * f;
   const lamAN = (upperLen + foreN) / (18 * s), lamAF = (upperLen + foreF) / (18 * s);
-  const hipS = [AX + pose.hip[0] * s * lamL, AY - pose.hip[1] * s * lamL];
+  const legDrop = (((J.hipB[1] + J.hipF[1]) / 2) - J.hip[1]) * f, hipS = [AX + pose.hip[0] * s * lamL, AY - pose.hip[1] * s * lamL - legDrop]; /* pose hip height is the height of the LEG joints, so lift the torso pivot by the drop to them */
   const tp = (Q) => { const dx = (Q[0] - J.hip[0]) * f, dy = (Q[1] - J.hip[1]) * f; return [hipS[0] + dx * cl - dy * sl, hipS[1] + dx * sl + dy * cl]; };
   const oldHip = [pose.hip[0] * s, pose.hip[1] * s], oldSh = [oldHip[0] + Math.sin(lean) * 18 * s, oldHip[1] + Math.cos(lean) * 18 * s];
   const handTarget = (sh, h, lam) => [sh[0] + (h[0] * s - oldSh[0]) * lam, sh[1] - (h[1] * s - oldSh[1]) * lam];
   const groundClip = AY * SS - 1, clipOn = !(anim === 'down' || anim === 'dead' || anim === 'knock');
   const draw = (nm, pivot, world, rot, mul) => { if (P[nm]) drawPiece(hi, HW, P[nm], J, pivot, world, rot, mul, clipOn ? groundClip : undefined); };
   // legs
-  const leg = (sfx, foot) => { const hp = tp(J['hip' + sfx]), sole = [AX + foot[0] * s * lamL, AY - foot[1] * s * lamL], offA = [(J['an' + sfx][0] - J['sole' + sfx][0]) * f, (J['an' + sfx][1] - J['sole' + sfx][1]) * f];
-    const r = S.ik(hp[0], hp[1], sole[0] + offA[0], sole[1] + offA[1], dist(J['hip' + sfx], J['kn' + sfx]) * f, dist(J['kn' + sfx], J['an' + sfx]) * f, pose.legBend); if (r.mid[1] > AY - 3) r.mid[1] = AY - 3;
+  const sx_ = v.stanceX || 1, leg = (sfx, foot0) => { const dxp = foot0[0] - pose.hip[0], mul = Math.abs(dxp) <= 6 ? sx_ : 1 + (sx_ - 1) * .35, foot = [pose.hip[0] + dxp * mul, foot0[1]]; /* a wide-stance source keeps its stance when standing, but strides stay moderate */ const hp = tp(J['hip' + sfx]), sole = [AX + foot[0] * s * lamL, AY - foot[1] * s * lamL], offA = [(J['an' + sfx][0] - J['sole' + sfx][0]) * f, (J['an' + sfx][1] - J['sole' + sfx][1]) * f];
+    const L1 = dist(J['hip' + sfx], J['kn' + sfx]) * f, L2 = dist(J['kn' + sfx], J['an' + sfx]) * f; let tx = sole[0] + offA[0], ty = sole[1] + offA[1];
+    { const dyy = ty - hp[1], dxx = tx - hp[0], mx = Math.sqrt(Math.max(0, ((L1 + L2) * .985) ** 2 - dyy * dyy)); if (Math.abs(dxx) > mx) { const nx = hp[0] + Math.sign(dxx) * mx; sole[0] += nx - tx; tx = nx; } } /* never stretch a leg past its length: the foot stays planted */
+    const r = S.ik(hp[0], hp[1], tx, ty, L1, L2, pose.legBend); if (r.mid[1] > AY - 3) r.mid[1] = AY - 3;
     return { hp, knee: r.mid, ankle: r.end, sole: [r.end[0] - offA[0], r.end[1] - offA[1]], tR: ang(hp, r.mid) - ang(J['hip' + sfx], J['kn' + sfx]), sR: ang(r.mid, r.end) - ang(J['kn' + sfx], J['an' + sfx]), sfx }; };
   const lB = leg('B', pose.fB), lF = leg('F', pose.fF);
   const tilt = (l, foot) => { const lift = Math.min(8, Math.max(0, foot[1])); return lift > .5 ? rad((foot[0] < 0 ? 1 : -.45) * lift * 3.2) : 0; };
   const drawLeg = (l, foot) => { if (P['leg' + l.sfx]) skinLimb(hi, HW, P['leg' + l.sfx], f, J['hip' + l.sfx], J['kn' + l.sfx], J['an' + l.sfx], l.hp, l.knee, l.ankle, (x, y) => tp([x, y]), clipOn ? groundClip : undefined); draw('foot' + l.sfx, J['an' + l.sfx], l.ankle, tilt(l, foot)); };
   // arms
   const shN = tp(J.shN), shF = tp(J.shF), hN = handTarget(shN, pose.hB, lamAN), hF = handTarget(shF, pose.hF, lamAF);
-  const aN = S.ik(shN[0], shN[1], hN[0], hN[1], upperLen, foreN, [-.4, 1]), aF = S.ik(shF[0], shF[1], hF[0], hF[1], upperLen, foreF, [-.4, 1]);
+  const aF = S.ik(shF[0], shF[1], hF[0], hF[1], upperLen, foreF, [-.4, 1]);
+  const rotF = ang(aF.mid, aF.end) - ang(J.elF, J.haF), gx = (J.grip[0] - J.elF[0]) * f, gy = (J.grip[1] - J.elF[1]) * f, gripW = [aF.mid[0] + gx * Math.cos(rotF) - gy * Math.sin(rotF), aF.mid[1] + gx * Math.sin(rotF) + gy * Math.cos(rotF)];
+  const wdx = Math.cos(rad(pose.wang)), wdy = -Math.sin(rad(pose.wang)), hN2 = v.twoHand ? [gripW[0] - wdx * v.twoHand * f * (v.ws || 1) + (pose.ext || 0) * s * wdx, gripW[1] - wdy * v.twoHand * f * (v.ws || 1) + (pose.ext || 0) * s * wdy] : hN;
+  const aN = S.ik(shN[0], shN[1], hN2[0], hN2[1], upperLen, foreN, [-.4, 1]);
   const neck = tp(J.neck), headRot = rad(pose.head), hairP = J.hairP ? tp(J.hairP) : null;
   // draw order (back to front)
   if (P.hair) draw('hair', J.hairP, hairP, headRot * .5 - lean * .35);
@@ -129,10 +134,9 @@ function renderFrame(id, pose, anim) {
   drawLeg(lF, pose.fF);
   draw('head', J.neck, neck, headRot);
   if (P.armN) skinLimb(hi, HW, P.armN, f, J.shN, J.elN, J.haN, shN, aN.mid, aN.end, (x, y) => tp([x, y]), clipOn ? groundClip : undefined);
-  const rotF = ang(aF.mid, aF.end) - ang(J.elF, J.haF), gx = (J.grip[0] - J.elF[0]) * f, gy = (J.grip[1] - J.elF[1]) * f, gripW = [aF.mid[0] + gx * Math.cos(rotF) - gy * Math.sin(rotF), aF.mid[1] + gx * Math.sin(rotF) + gy * Math.cos(rotF)];
   const wk = k.weapon, ext = (pose.ext || 0) * s;
-  if (P.weapon && wk === (id === 'ricky' ? 'flag' : id === 'vv' ? 'mic' : '#')) {
-    const restW = wk === 'flag' ? 90 : 114, ws = wk === 'flag' ? 1.45 : 1.3, dxs = Math.cos(rad(pose.wang)), dys = -Math.sin(rad(pose.wang)), wpos = [gripW[0] + dxs * ext, gripW[1] + dys * ext];
+  if (P.weapon && v.pw && wk === v.pw) {
+    const restW = v.restW, ws = v.ws, dxs = Math.cos(rad(pose.wang)), dys = -Math.sin(rad(pose.wang)), wpos = [gripW[0] + dxs * ext, gripW[1] + dys * ext];
     if (wk === 'mic') { const belt = tp(J.belt), sag = 9 * s * Math.max(0, 1 - ext / (22 * s)) + 2, B2 = wpos; const C = [(belt[0] + B2[0]) / 2, (belt[1] + B2[1]) / 2 + sag]; for (let i = 0; i <= 30; i++) { const u = i / 30, x = (1 - u) * (1 - u) * belt[0] + 2 * u * (1 - u) * C[0] + u * u * B2[0], y = (1 - u) * (1 - u) * belt[1] + 2 * u * (1 - u) * C[1] + u * u * B2[1]; const hx = Math.round(x * SS), hy = Math.round(y * SS); for (let ox = 0; ox < 2; ox++) for (let oy = 0; oy < 2; oy++) { const q = ((hy + oy) * HW + hx + ox) * 4; if (q >= 0 && q < hi.length) { hi[q] = 40; hi[q + 1] = 40; hi[q + 2] = 50; hi[q + 3] = 1; } } } }
     draw('weapon', J.grip, wpos, rad(restW - pose.wang), ws);
   }
@@ -145,7 +149,7 @@ function renderFrame(id, pose, anim) {
     if (a >= SS * SS * .5) { r = Math.round(r / a) & 0xf8; g = Math.round(g / a) & 0xf8; b = Math.round(b / a) & 0xf8; buf.d[y * CELL + x] = ((255 << 24) | (Math.min(255, b + 4) << 16) | (Math.min(255, g + 4) << 8) | Math.min(255, r + 4)) >>> 0; }
   }
   // procedural weapons that are not part of the reference art (salami, baton, case, cane)
-  if (wk && !(P.weapon && wk === (id === 'ricky' ? 'flag' : id === 'vv' ? 'mic' : '#'))) { const hand = [aF.end[0], aF.end[1]]; const tmp = new Buf(CELL, CELL); S.drawWeapon(tmp, k, pose, hand, hipS, s); for (let i = 0; i < tmp.d.length; i++) if (tmp.d[i] && (!clipOn || i < AY * CELL)) buf.d[i] = tmp.d[i]; }
+  if (wk && !(P.weapon && v.pw && wk === v.pw)) { const hand = [aF.end[0], aF.end[1]]; const tmp = new Buf(CELL, CELL); S.drawWeapon(tmp, k, pose, hand, hipS, s); for (let i = 0; i < tmp.d.length; i++) if (tmp.d[i] && (!clipOn || i < AY * CELL)) buf.d[i] = tmp.d[i]; }
   if (anim === 'down' || anim === 'dead') { let bot = 0; for (let y = CELL - 1; y >= 0 && !bot; y--) for (let x = 0; x < CELL; x++) if (buf.d[y * CELL + x]) { bot = y; break; } const dy = bot - (AY - 1); if (dy > 0) { for (let y = 0; y < CELL; y++) for (let x = 0; x < CELL; x++) buf.d[y * CELL + x] = y + dy < CELL ? buf.d[(y + dy) * CELL + x] : 0; } }
   buf.outline(0xff261218 >>> 0); buf.outline(0xff261218 >>> 0);
   return { buf, rig: { hip: hipS, sh: neck, head: [neck[0] - sl * 6 * s, neck[1] - cl * 9 * s], hand: aF.end, lF, lB } };

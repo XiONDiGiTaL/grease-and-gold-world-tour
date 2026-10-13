@@ -27,22 +27,38 @@ def build(name, spec):
     skin=(h<45)&(s>.15)&(s<.65)&(v>.62)
     M={k:poly_mask(p,size) for k,p in spec['poly'].items()}
     yy,xx=np.mgrid[0:size[1],0:size[0]]; Y=lambda y:int(y*Q)
+    if spec.get('weaponHole'):
+        wm=spec['derive']['weapon'](M,yy,xx,Y,skin,sil,h,s,v); M['weaponArea']=ndimage.binary_dilation(wm,iterations=2)
     P={}
     def piece(nm,mask): P[nm]=np.where(mask&sil,idx,0).astype(np.uint8)
     for k,fn in spec['derive'].items(): piece(k,fn(M,yy,xx,Y,skin,sil,h,s,v))
     # torso fill: inside torso region where the near arm / far arm used to be, copy nearest torso colour
-    tor=P['torso'].copy(); hole=(M['nearArm']|M['farArm']|M.get('weaponArea',np.zeros_like(sil)))&(xx>=int(spec['torsoLeft']*Q))&(xx<=int(spec['torsoRight']*Q))&(yy>=int(spec['torsoTop']*Q))&(yy<=int(spec['torsoBot']*Q))
+    tor=P['torso'].copy(); hole=sil&(M['nearArm']|M['farArm']|M.get('weaponArea',np.zeros_like(sil)))&(xx>=int(spec['torsoLeft']*Q))&(xx<=int(spec['torsoRight']*Q))&(yy>=int(spec['torsoTop']*Q))&(yy<=int(spec['torsoBot']*Q))
     keep=(tor>0)&~hole; 
     if hole.any():
-        filled=tor.copy(); Hh,Ww=tor.shape
-        for y in range(Hh):
-            xs=np.where(hole[y])[0]
-            for x in xs:
-                nx=x
-                while nx<Ww and not keep[y,nx] and nx-x<60: nx+=1       # continue the garment texture from the right
-                if nx<Ww and keep[y,nx]: filled[y,x]=tor[y,nx]
-                else: filled[y,x]=0
-        tor=np.where(hole,filled,tor)
+        Hh,Ww=tor.shape
+        if spec.get('fillDir')=='texture':     # hidden garment: random denim texture sampled from the visible sleeve (no flat shards)
+            rng=np.random.default_rng(11); srcp=np.where((P['armN']>0)&(yy<int(130*Q)),P['armN'],0); vals=srcp[srcp>0]
+            Hh2,Ww2=tor.shape; tex=np.zeros(tor.shape,np.uint8); L=lambda i: int(sum(pal[i-1])); allv=vals[np.array([L(v) for v in vals])>260]
+            for y in range(Hh2):
+                band=srcp[max(0,y-4):y+5,:]; bv=band[band>0]; bv=bv[np.array([L(v) for v in bv])>260] if len(bv) else bv
+                if len(bv)<8: bv=allv
+                lm=np.array([L(v) for v in bv]); o=np.argsort(lm); mid=bv[o[int(len(bv)*.3):max(int(len(bv)*.85),int(len(bv)*.3)+1)]]
+                tex[y]=rng.choice(mid,size=Ww2)
+            tor=np.where(hole&M['torsoP'],tex,tor)
+        elif spec.get('fillDir')=='nearest':
+            d,(iy,ix)=ndimage.distance_transform_edt(~keep,return_indices=True)
+            filled=np.where(hole&(d<=spec.get('fillMax',60)), tor[iy,ix], 0); tor=np.where(hole,filled,tor)
+        else:
+            filled=tor.copy()
+            for y in range(Hh):
+                xs=np.where(hole[y])[0]
+                for x in xs:
+                    nx=x; stp=-1 if spec.get('fillDir')=='left' else 1
+                    while 0<=nx<Ww and not keep[y,nx] and abs(nx-x)<spec.get('fillMax',60)+60: nx+=stp       # continue the garment texture from the side
+                    if 0<=nx<Ww and keep[y,nx]: filled[y,x]=tor[y,nx]
+                    else: filled[y,x]=0
+            tor=np.where(hole,filled,tor)
     P['torso']=tor.astype(np.uint8)
     CL={}
     cls_fn=spec['classify']
@@ -159,7 +175,41 @@ def classify_vv(nm,arr,rgb,h,s,v,xx,yy):
     elif nm.startswith('leg'): c[a&(v<.45)]=5
     return c
 R['classify']=classify_ricky; V['classify']=classify_vv
+
+# ------------------------------------------------------------------ JOHNNY (own reference, native 210x273 resolution)
+import colorsys as _cs
+J=dict(colors=48,torsoLeft=0,torsoRight=130,torsoTop=40,torsoBot=190,fillMax=90,fillDir='texture',weaponHole=True)
+J['poly']={
+ 'head':[(36,0),(88,0),(88,52),(80,66),(44,66),(36,52)],
+ 'torsoP':[(0,52),(60,44),(106,48),(112,66),(104,104),(100,150),(96,188),(0,188)],
+ 'nearArm':[(2,62),(24,50),(40,58),(37,85),(29,112),(33,128),(46,144),(66,148),(68,172),(52,178),(38,172),(30,158),(22,142),(10,128),(0,108),(0,80)],
+ 'farArm':[(118,100),(148,102),(160,114),(158,136),(142,142),(126,134),(116,118)],
+ 'salamiP':[(55,112),(75,95),(110,72),(140,40),(160,18),(190,14),(208,30),(210,70),(190,98),(165,128),(135,150),(105,160),(75,162),(55,152)],
+ 'weaponArea':[(50,2),(212,2),(212,162),(50,162)],
+ 'backLeg':[(12,164),(86,164),(82,196),(62,226),(50,242),(14,242),(20,216),(20,190)],
+ 'frontLeg':[(80,164),(132,166),(144,200),(148,238),(130,244),(118,222),(100,196),(84,178)]}
+def _salami(M,yy,xx,Y,sk,sil,h,s,v):
+    skin=(h>=14)&(h<=42)&(s>.3)&(v>.4)
+    return M['salamiP']&~skin&~M['head']
+J['derive']={
+ 'head':lambda M,yy,xx,Y,sk,sil,h,s,v: M['head'],
+ 'weapon':_salami,
+ 'torso':lambda M,yy,xx,Y,sk,sil,h,s,v: M['torsoP']&~_salami(M,yy,xx,Y,sk,sil,h,s,v)&~M['nearArm']&~M['farArm']&(yy<=Y(188)),
+ 'armN':lambda M,yy,xx,Y,sk,sil,h,s,v: M['nearArm']&~_salami(M,yy,xx,Y,sk,sil,h,s,v),
+ 'upperNear':lambda M,yy,xx,Y,sk,sil,h,s,v: M['nearArm']&(yy<=Y(112))&~_salami(M,yy,xx,Y,sk,sil,h,s,v),
+ 'foreFar':lambda M,yy,xx,Y,sk,sil,h,s,v: M['farArm']&~_salami(M,yy,xx,Y,sk,sil,h,s,v),
+ 'legB':lambda M,yy,xx,Y,sk,sil,h,s,v: M['backLeg']&(yy<=Y(240)),
+ 'legF':lambda M,yy,xx,Y,sk,sil,h,s,v: M['frontLeg']&(yy<=Y(242)),
+ 'footB':lambda M,yy,xx,Y,sk,sil,h,s,v: (yy>=Y(238))&(xx<Y(64)),
+ 'footF':lambda M,yy,xx,Y,sk,sil,h,s,v: (yy>=Y(241))&(xx>=Y(110))}
+J['joints']={'hip':(78,162),'neck':(62,60),'belt':(78,160),'shN':(45,56),'elN':(14,112),'haN':(52,158),'shF':(100,58),'elF':(118,108),'haF':(142,124),'grip':(142,124),
+ 'hipB':(60,168),'knB':(42,205),'anB':(34,238),'soleB':(22,262),'hipF':(98,170),'knF':(122,206),'anF':(136,240),'soleF':(142,272)}
+J['order']=['legB','footB','torso','legF','footF','head','armN','weapon','foreFar']
+J['classify']=lambda nm,arr,rgb,h,s,v,xx,yy: np.zeros(arr.shape,np.uint8)
 art={'ricky':build('ricky',R),'vv':build('vv',V)}
+Q=1.0
+art['johnny']=build('johnny',J)
+Q=0.25
 open('src/rigart.js','w').write('/* Rig pieces cut from the supplied reference sprites (tools/cut_parts.py). 1/4-resolution, palette-indexed. */\n(function(G){G.RIGART='+json.dumps(art,separators=(',',':'))+';})(globalThis.GG=globalThis.GG||{});\n')
 for n in art: print(n,len(art[n]['parts']),'parts',art[n]['size'])
 import os; print(os.path.getsize('src/rigart.js')//1024,'KB')

@@ -92,14 +92,14 @@ function walkFrames(n, stride, lift, lean, hipDrop, hipY, armSw) {
   const foot = (q) => { q = ((q % 1) + 1) % 1; if (q < .5) return [stride - 2 * stride * (q / .5), 0]; const t = (q - .5) / .5; return [-stride + 2 * stride * t, lift * Math.sin(Math.PI * t)]; };
   for (let i = 0; i < n; i++) {
     const p = i / n, c = Math.cos(2 * Math.PI * p), sn = Math.sin(2 * Math.PI * p);
-    out.push(P({ hip: [0, hipY - hipDrop * c * c], lean, fF: foot(p), fB: foot(p + .5), hF: [11 + armSw * sn * .6, 36 + armSw * .3 * c], hB: [5 - armSw * sn, 34], head: 0 }));
+    out.push(P({ hip: [0, hipY - hipDrop * c * c], lean, fF: foot(p), fB: foot(p + .5), hF: [11 + armSw * sn * .6, 36 + armSw * .3 * c], hB: [4 - armSw * sn * .8, 22], head: 0 }));
   }
   return out;
 }
 const spinFrames = (n, f) => { const o = []; for (let i = 0; i < n; i++) o.push(f(i, i * 360 / n)); return o; };
 
 const COMMON = {
-  idle: (w) => [P({ wang: w }), P({ wang: w, hF: [12, 38], hB: [6, 36] }), P({ wang: w, hF: [12, 38], hB: [6, 36], lean: 5 }), P({ wang: w, lean: 5 })],
+  idle: (w) => [P({ wang: w, hB: [4, 20] }), P({ wang: w, hF: [12, 38], hB: [5, 21] }), P({ wang: w, hF: [12, 38], hB: [5, 21], lean: 5 }), P({ wang: w, lean: 5, hB: [4, 20] })],
   walk: (w) => walkFrames(8, 8, 5, 5, 1.2, 25, 4).map(p => (p.wang = w, p)),
   run: (w) => walkFrames(6, 11, 8, 14, 1.8, 24, 6).map(p => (p.wang = w, p.hF = [10 + (p.hF[0] - 11) * 1.2, 34], p)),
   jump: () => [P({ hip: [0, 22], lean: 6, fF: [11, 11], fB: [-6, 7], hF: [14, 44], hB: [4, 47] }), P({ hip: [0, 22], lean: 4, fF: [9, 9], fB: [-8, 11], hF: [13, 40], hB: [2, 44] }), P({ hip: [0, 24], lean: 2, fF: [7, 1], fB: [-7, 0], hF: [12, 42], hB: [2, 40] })],
@@ -143,7 +143,7 @@ ATK.flag = {
 ATK.salami = {
   a1: () => [P({ hip: [-2, 25], lean: -6, hF: [2, 40], wang: 115, ...LEG, fF: [8, 0] }), P({ hip: [3, 24], lean: 12, hF: [19, 34], wang: 15, ...LEG, head: 6 }), P({ hip: [3, 24], lean: 13, hF: [20, 33], wang: 8, ...LEG, head: 6 }), P({ hip: [1, 25], lean: 6, hF: [14, 36], wang: 40, ...LEG })],
   a2: () => [P({ hip: [-3, 25], lean: -10, hF: [-3, 42], wang: 150, ...LEG, fF: [8, 0] }), P({ hip: [1, 25], lean: 8, hF: [14, 42], wang: 70, ...LEG }), P({ hip: [4, 24], lean: 16, hF: [22, 28], wang: -12, ...LEG, head: 8 }), P({ hip: [2, 25], lean: 6, hF: [14, 36], wang: 40, ...LEG })],
-  a3: () => SLAM(10),
+  a3: () => { const f = SLAM(10); f[2] = Object.assign({}, f[2], { hF: [14, 31], wang: -64 }); f[3] = Object.assign({}, f[3], { hF: [16, 27], wang: -70 }); return f; },
   jatk: () => ATK.flag.jatk(), jdown: () => ATK.flag.jdown(),
   special: () => { const f = [[8, 60, 100], [12, 56, 50], [23, 22, -60], [25, 22, -78], [14, 40, 20], [4, 52, 90]]; return f.map((q, i) => P({ hip: [i >= 2 && i <= 3 ? 4 : 0, i >= 2 && i <= 3 ? 22 : 24], lean: i >= 2 && i <= 3 ? 26 : 0, head: i >= 2 && i <= 3 ? 16 : 0, fF: [14, 0], fB: [-12, 0], hF: [q[0], q[1]], hB: [q[0] - 4, q[1] - 2], wang: q[2] })); }
 };
