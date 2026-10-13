@@ -418,7 +418,16 @@ func update_play() -> void:
     flash_t -= 1
 
 # ---------------------------------------------------------------- players
+func settle(e: Dictionary) -> void:
+  if e.z > 0.0 and not (e.state in ["knock", "jump", "jatk", "jdown"]):
+    e.vz -= GRAV
+    e.z += e.vz
+    if e.z <= 0.0:
+      e.z = 0.0
+      e.vz = 0.0
+
 func update_player(p: Dictionary) -> void:
+  settle(p)
   p.t += 1
   if p.invuln > 0:
     p.invuln -= 1
@@ -874,7 +883,7 @@ func hurt(tg: Dictionary, a: Dictionary, mv: Dictionary) -> void:
   var dmg: float = mv.dmg
   tg.hp -= dmg
   tg.flash = 4
-  var knock: bool = tg.hp <= 0.0 or mv.get("knock", false) or tg.hitChain >= 2
+  var knock: bool = tg.hp <= 0.0 or mv.get("knock", false) or tg.hitChain >= 2 or tg.z > 1.0 # hit in mid-air = knocked down (the flinch state has no gravity)
   if tg.team == "e" and tg.def.has("poise"):
     tg.poise -= dmg
     if tg.poise <= 0.0:
@@ -957,6 +966,7 @@ func nearest_player(e: Dictionary):
   return b
 
 func update_enemy(e: Dictionary) -> void:
+  settle(e)
   var Dd: Dictionary = e.def
   if e.flash > 0:
     e.flash -= 1

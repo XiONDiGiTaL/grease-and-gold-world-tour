@@ -96,6 +96,10 @@ const put = (g, type, dx, dy, st) => { const p = g.players[0], e = g.makeEnemy(t
 { const g = mk('ricky'); clearEnemies(g); const p = g.players[0]; p.x = 150; g.cam.x = 90; for (const type of ['doner', 'kunefe', 'lahmacun', 'shish', 'spit']) { g.parts = []; g.items = [{ type, x: p.x + 2, y: p.y, z: 0, life: 900, t: 0 }]; p.hp = 10; step(g, 2); const ghost = g.parts.find(q => q.type === 'foodghost'); ok(ghost && ghost.food === type && p.hp > 10, 'collecting ' + type + ' shows and heals ' + type, ghost && ghost.food); } }
 // music: stage 3 uses the second song, the rest the first
 ok(G.STAGES.map(s => s.music).join() === 'arcade,arcade,kneel,arcade', 'stage music: Arcade Tune on stages 1,2,4; I Don\'t Kneel on stage 3', G.STAGES.map(s => s.music));
+// regression: a fighter hit while jumping must come back down (used to float forever in the hit state)
+{ const g = mk('vv'); clearEnemies(g); const p = g.players[0]; p.x = 150; g.cam.x = 90; press(g, 'jump'); step(g, 10); ok(p.z > 5, 'precondition: jumping'); g.hurt(p, { x: p.x + 20, face: -1, z: 0, team: 'e' }, { dmg: 3, kb: 1, stun: 16, hs: 0, box: { z0: 10, z1: 40 } }); step(g, 90);
+  ok(p.z === 0 && !['hit', 'jump'].includes(p.state), 'player hit in mid-air lands (no floating)', { z: p.z, s: p.state });
+  const e = put(g, 'guard', 40, 0); e.z = 30; e.vz = 0; e.state = 'hit'; e.stun = 20; step(g, 90); ok(e.z === 0, 'any airborne fighter in a ground state is pulled back to the floor', e.z); }
 // crowd separation
 { const g = mk('ricky'); clearEnemies(g); const p = g.players[0]; p.x = 200; g.cam.x = 150; for (let i = 0; i < 5; i++) { const e = put(g, 'guard', 160 - 200 + 150 + 0, 0); e.x = 120; e.y = 170; e.cool = 9999; } step(g, 90); let mn = 1e9; for (let i = 0; i < g.enemies.length; i++) for (let j = i + 1; j < g.enemies.length; j++) { const A = g.enemies[i], B = g.enemies[j]; mn = Math.min(mn, Math.hypot((A.x - B.x) / ((A.hw + B.hw) * .9), (A.y - B.y) / 10)); } ok(mn > .8, 'crowd separation pulls stacked enemies apart (no body overlap)', mn); }
 // enemy windup readability

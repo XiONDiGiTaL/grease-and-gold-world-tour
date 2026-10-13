@@ -273,6 +273,17 @@ func _initialize() -> void:
   g.hurt(hv, p, {"dmg": 1.0, "knock": true, "launch": 2.0, "kb": 2.0, "hs": 0, "box": {"z0": 10.0, "z1": 40.0}})
   step(60)
   ok(hv.state == "idle", "heavy hit by knock move without poise break recovers from hit-stun", hv.state)
+  # regression: a fighter hit while jumping must come back down
+  p = fresh("vv")
+  g.enemies = []
+  p.x = 150.0
+  g.cam_x = 90.0
+  press("jump")
+  step(10)
+  ok(p.z > 5.0, "precondition: jumping")
+  g.hurt(p, {"id": -1, "x": p.x + 20.0, "face": -1, "z": 0.0, "team": "e"}, {"dmg": 3.0, "kb": 1.0, "stun": 16, "hs": 0, "box": {"z0": 10.0, "z1": 40.0}})
+  step(90)
+  ok(p.z == 0.0 and p.state != "hit" and p.state != "jump", "player hit in mid-air lands (no floating)", [p.z, p.state])
   # separation
   p = fresh("ricky")
   g.enemies = []

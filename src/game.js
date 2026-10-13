@@ -129,7 +129,9 @@ class Game {
 
   /* ----- players ----- */
   pm(p) { return p.def.moves; }
+  settle(e) { if (e.z > 0 && !['knock', 'jump', 'jatk', 'jdown'].includes(e.state)) { e.vz = (e.vz || 0) - GRAV; e.z += e.vz; if (e.z <= 0) { e.z = 0; e.vz = 0; } } }
   updatePlayer(p) {
+    this.settle(p);
     p.t = (p.t || 0) + 1; if (p.invuln > 0) p.invuln--; if (p.flash > 0) p.flash--; if (p.comboTimer > 0) p.comboTimer--;
     if (p.chainT > 0 && --p.chainT === 0) p.hitChain = 0;
     const ax = I.axisX(), ay = I.axisY();
@@ -256,7 +258,7 @@ class Game {
     const sx = t.x - f * t.hw * .4, sy = t.y, sz = clamp(a.z + (mv.box ? (mv.box.z0 + mv.box.z1) / 2 : 30), t.z + 10, t.z + (t.ht || 30) - 6);
     if (t.kind === 'prop') { t.hp -= mv.special ? .5 : 1; t.shake = 8; this.spark(sx, sy, sz, 0); A.play('hit'); this.hitstop = Math.max(this.hitstop, 2); if (t.hp <= 0) this.breakProp(t); return; }
     const dmg = mv.dmg; t.hp -= dmg; t.flash = 4;
-    let knock = t.hp <= 0 || !!mv.knock || t.hitChain >= 2;
+    let knock = t.hp <= 0 || !!mv.knock || t.hitChain >= 2 || t.z > 1; /* a fighter hit in mid-air is knocked down (the flinch state has no gravity) */
     if (t.def && t.def.poise && t.team === 'e') { t.poise -= dmg; if (t.poise <= 0) { knock = true; t.poise = t.def.poise; } else if (t.hp > 0) knock = false; }
     const noFlinch = (t.armor || t.state === 'special') && !knock;
     if (t.held && t.team === 'p') this.release(t);
@@ -285,6 +287,7 @@ class Game {
   /* ----- enemies ----- */
   nearestPlayer(e) { let b = null, bd = 1e9; for (const p of this.players) { if (['dead'].includes(p.state)) continue; const d = Math.abs(p.x - e.x) + Math.abs(p.y - e.y) * 2; if (d < bd) { bd = d; b = p; } } return b; }
   updateEnemy(e) {
+    this.settle(e);
     const D = e.def; if (e.flash > 0) e.flash--; if (e.cool > 0) e.cool--; if (e.invuln > 0) e.invuln--;
     if (e.chainT > 0 && --e.chainT === 0) e.hitChain = 0;
     switch (e.state) {
