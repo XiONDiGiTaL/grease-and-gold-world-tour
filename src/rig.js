@@ -30,7 +30,7 @@ const SK = { h: 22, s: .45, vMul: .95 };
 const V = {
   ricky: { art: 'ricky', pw: 'flag', restW: 90, ws: 1.25, tint: { pants: { h: 235, s: .25, vMul: .62 } } },
   vv: { art: 'vv', pw: 'mic', restW: 114, ws: 1.0, tint: { hair: { h: 30, s: .52, vMul: 1.32 } } },
-  johnny: { art: 'johnny', pw: 'salami', restW: 53, ws: .66, twoHand: 88, weapon: 'salami' },
+  johnny: { art: 'johnny', farSleeve: true, pw: 'salami', restW: 53, ws: .66, twoHand: 88, weapon: 'salami' },
   mara: { art: 'vv', tint: { coat: { h: 350, s: .66, vMul: 1.15 }, hair: { h: 18, s: .5, vMul: .62 }, pants: { h: 24, s: .5, vMap: [0, 1.7] }, skin: { h: 22, s: .45, vMul: .92 } } },
 };
 
@@ -142,25 +142,31 @@ function renderFrame(id, pose, anim) {
   const drawLeg = (l, foot) => { if (P['leg' + l.sfx]) skinLimb(hi, HW, P['leg' + l.sfx], f, J['hip' + l.sfx], J['kn' + l.sfx], J['an' + l.sfx], l.hp, l.knee, l.ankle, (x, y) => tp([x, y]), clipOn ? groundClip : undefined); draw('foot' + l.sfx, J['an' + l.sfx], l.ankle, tilt(l, foot)); };
   // arms
   const shN = tp(J.shN), shF = tp(J.shF), hN = handTarget(shN, pose.hB, lamAN), hF = handTarget(shF, pose.hF, lamAF);
-  const aF = S.ik(shF[0], shF[1], hF[0], hF[1], upperLen, foreF, [.35, 1]); /* the raised arm's elbow sits down-and-forward, as drawn in the references */
-  const rotF = ang(aF.mid, aF.end) - ang(J.elF, J.haF), gx = (J.grip[0] - J.elF[0]) * f, gy = (J.grip[1] - J.elF[1]) * f, gripW = [aF.mid[0] + gx * Math.cos(rotF) - gy * Math.sin(rotF), aF.mid[1] + gx * Math.sin(rotF) + gy * Math.cos(rotF)];
+  const fs = !!v.farSleeve && !!P.armF, handLen = fs ? dist(J.wrN, J.haN) * f : 0, foreEff = fs ? dist(J.elN, J.wrN) * f : foreF;
+  const hd = Math.hypot(hF[0] - shF[0], hF[1] - shF[1]) || 1, tgtF = fs ? [hF[0] - (hF[0] - shF[0]) / hd * handLen, hF[1] - (hF[1] - shF[1]) / hd * handLen] : hF;
+  const aF = S.ik(shF[0], shF[1], tgtF[0], tgtF[1], upperLen, foreEff, [.35, 1]); /* the raised arm's elbow sits down-and-forward, as drawn in the references */
+  let rotF, gripW;
+  if (fs) { const dA = ang(aF.mid, aF.end); rotF = dA - ang(J.elN, J.wrN); gripW = [aF.end[0] + Math.cos(dA) * handLen, aF.end[1] + Math.sin(dA) * handLen]; }
+  else { rotF = ang(aF.mid, aF.end) - ang(J.elF, J.haF); const gx = (J.grip[0] - J.elF[0]) * f, gy = (J.grip[1] - J.elF[1]) * f; gripW = [aF.mid[0] + gx * Math.cos(rotF) - gy * Math.sin(rotF), aF.mid[1] + gx * Math.sin(rotF) + gy * Math.cos(rotF)]; }
   const wdx = Math.cos(rad(pose.wang)), wdy = -Math.sin(rad(pose.wang)), hN2 = v.twoHand ? [gripW[0] - wdx * v.twoHand * f * (v.ws || 1) + (pose.ext || 0) * s * wdx, gripW[1] - wdy * v.twoHand * f * (v.ws || 1) + (pose.ext || 0) * s * wdy] : hN;
   const aN = S.ik(shN[0], shN[1], hN2[0], hN2[1], upperLen, foreN, [-.4, 1]);
   const neck = tp(J.neck), headRot = rad(pose.head), hairP = J.hairP ? tp(J.hairP) : null;
   // draw order (back to front)
+  const behindW = Math.cos(rad(pose.wang)) < -.15 && P.weapon && v.pw === k.weapon; let weaponDrawn = false;
+  const drawWeaponPiece = () => { if (weaponDrawn) return; weaponDrawn = true; const wkk = k.weapon, extt = (pose.ext || 0) * s, dxs = Math.cos(rad(pose.wang)), dys = -Math.sin(rad(pose.wang)), wpos = [gripW[0] + dxs * extt, gripW[1] + dys * extt];
+    if (wkk === 'mic') { const belt = tp(J.belt), sag = 9 * s * Math.max(0, 1 - extt / (22 * s)) + 2, B2 = wpos, C = [(belt[0] + B2[0]) / 2, (belt[1] + B2[1]) / 2 + sag]; for (let i = 0; i <= 30; i++) { const u = i / 30, x = (1 - u) * (1 - u) * belt[0] + 2 * u * (1 - u) * C[0] + u * u * B2[0], y = (1 - u) * (1 - u) * belt[1] + 2 * u * (1 - u) * C[1] + u * u * B2[1]; const hx = Math.round(x * SS), hy = Math.round(y * SS); for (let ox = 0; ox < 2; ox++) for (let oy = 0; oy < 2; oy++) { const q = ((hy + oy) * HW + hx + ox) * 4; if (q >= 0 && q < hi.length) { hi[q] = 40; hi[q + 1] = 40; hi[q + 2] = 50; hi[q + 3] = 1; } } } }
+    draw('weapon', J.grip, wpos, rad(v.restW - pose.wang), v.ws); };
+  if (behindW) drawWeaponPiece();
   if (P.hair) draw('hair', J.hairP, hairP, headRot * .5 - lean * .35);
   drawLeg(lB, pose.fB);
   draw('torso', J.hip, hipS, lean);
   drawLeg(lF, pose.fF);
   draw('head', J.neck, neck, headRot);
   if (P.armN) skinLimb(hi, HW, P.armN, f, J.shN, J.elN, J.haN, shN, aN.mid, aN.end, (x, y) => tp([x, y]), clipOn ? groundClip : undefined);
+  if (fs) skinLimb(hi, HW, P.armF, f, J.shN, J.elN, J.wrN, shF, aF.mid, aF.end, (x, y) => tp([x, y]), clipOn ? groundClip : undefined); /* far sleeve behind the weapon, hand in front of it */
   const wk = k.weapon, ext = (pose.ext || 0) * s;
-  if (P.weapon && v.pw && wk === v.pw) {
-    const restW = v.restW, ws = v.ws, dxs = Math.cos(rad(pose.wang)), dys = -Math.sin(rad(pose.wang)), wpos = [gripW[0] + dxs * ext, gripW[1] + dys * ext];
-    if (wk === 'mic') { const belt = tp(J.belt), sag = 9 * s * Math.max(0, 1 - ext / (22 * s)) + 2, B2 = wpos; const C = [(belt[0] + B2[0]) / 2, (belt[1] + B2[1]) / 2 + sag]; for (let i = 0; i <= 30; i++) { const u = i / 30, x = (1 - u) * (1 - u) * belt[0] + 2 * u * (1 - u) * C[0] + u * u * B2[0], y = (1 - u) * (1 - u) * belt[1] + 2 * u * (1 - u) * C[1] + u * u * B2[1]; const hx = Math.round(x * SS), hy = Math.round(y * SS); for (let ox = 0; ox < 2; ox++) for (let oy = 0; oy < 2; oy++) { const q = ((hy + oy) * HW + hx + ox) * 4; if (q >= 0 && q < hi.length) { hi[q] = 40; hi[q + 1] = 40; hi[q + 2] = 50; hi[q + 3] = 1; } } } }
-    draw('weapon', J.grip, wpos, rad(restW - pose.wang), ws);
-  }
-  draw('upperNear', J.shN, shF, ang(shF, aF.mid) - ang(J.shN, J.elN)); draw('foreFar', J.elF, aF.mid, rotF);
+  if (P.weapon && v.pw && wk === v.pw) drawWeaponPiece();
+  if (fs) draw('foreFar', J.haF, gripW, rotF); else { draw('upperNear', J.shN, shF, ang(shF, aF.mid) - ang(J.shN, J.elN)); draw('foreFar', J.elF, aF.mid, rotF); }
   // downsample hi -> cell (with optional horizontal stretch), threshold, posterise
   const buf = new Buf(CELL, CELL), xs = pose.lean > -30 ? (v.xs || 1) : 1;
   for (let y = 0; y < CELL; y++) for (let x = 0; x < CELL; x++) {

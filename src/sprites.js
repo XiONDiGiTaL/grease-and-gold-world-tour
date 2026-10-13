@@ -121,8 +121,8 @@ const WAV = { mic: 60, flag: 84, salami: 38, fist: 90 };
 
 const ATK = {};
 ATK.mic = {
-  a1: () => [P({ hip: [-2, 25], lean: -6, hF: [0, 36], wang: 150, ...LEG, fF: [8, 0] }), P({ hip: [3, 24], lean: 14, hF: [24, 38], wang: 5, ext: 6, ...LEG, head: 8 }), P({ hip: [3, 24], lean: 15, hF: [25, 37], wang: 0, ext: 10, ...LEG, head: 8 }), P({ hip: [1, 25], lean: 6, hF: [16, 36], wang: 30, ...LEG })],
-  a2: () => [P({ hip: [-3, 25], lean: -8, hF: [-4, 41], wang: 165, ...LEG, fF: [8, 0] }), P({ hip: [4, 24], lean: 18, hF: [22, 38], wang: 20, ext: 8, ...LEG, head: 10 }), P({ hip: [4, 24], lean: 20, hF: [23, 35], wang: 5, ext: 16, ...LEG, head: 10 }), P({ hip: [2, 25], lean: 8, hF: [16, 36], wang: 30, ...LEG })],
+  a1: () => [P({ hip: [-2, 25], lean: -6, hF: [5, 39], wang: 138, ...LEG, fF: [8, 0] }), P({ hip: [3, 24], lean: 14, hF: [24, 38], wang: 5, ext: 6, ...LEG, head: 8 }), P({ hip: [3, 24], lean: 15, hF: [25, 37], wang: 0, ext: 10, ...LEG, head: 8 }), P({ hip: [1, 25], lean: 6, hF: [16, 36], wang: 30, ...LEG })],
+  a2: () => [P({ hip: [-3, 25], lean: -8, hF: [1, 41], wang: 155, ...LEG, fF: [8, 0] }), P({ hip: [4, 24], lean: 18, hF: [22, 38], wang: 20, ext: 8, ...LEG, head: 10 }), P({ hip: [4, 24], lean: 20, hF: [23, 35], wang: 5, ext: 16, ...LEG, head: 10 }), P({ hip: [2, 25], lean: 8, hF: [16, 36], wang: 30, ...LEG })],
   a3: () => SLAM(0),
   jatk: () => [P({ hip: [0, 26], lean: 10, fF: [14, 14], fB: [-6, 8], hF: [22, 36], hB: [8, 40], wang: 5, ext: 12 }), P({ hip: [0, 26], lean: 10, fF: [15, 13], fB: [-6, 8], hF: [23, 35], hB: [8, 40], wang: 0, ext: 14 })],
   jdown: () => [P({ hip: [2, 24], lean: 24, fF: [10, 12], fB: [-4, 14], hF: [20, 24], hB: [14, 28], wang: -80, ext: 6 }), P({ hip: [2, 24], lean: 26, fF: [10, 12], fB: [-4, 14], hF: [20, 22], hB: [14, 26], wang: -85, ext: 8 })],
@@ -133,17 +133,17 @@ function SLAM(w) {
     P({ hip: [5, 22], lean: 28, head: 20, hF: [23, 22], hB: [18, 24], wang: -50 + w, ext: 4, fF: [18, 0], fB: [-10, 0] }), P({ hip: [5, 22], lean: 30, head: 20, hF: [25, 15], hB: [20, 18], wang: -70 + w, ext: 2, fF: [18, 0], fB: [-10, 0] }), P({ hip: [3, 24], lean: 14, hF: [20, 28], hB: [14, 28], wang: -20 + w, fF: [17, 0], fB: [-10, 0] })];
 }
 ATK.flag = {
-  a1: () => [P({ hip: [-2, 25], lean: -6, hF: [2, 36], wang: 60, ...LEG, fF: [8, 0] }), P({ hip: [3, 24], lean: 12, hF: [20, 37], wang: 6, ...LEG, head: 6 }), P({ hip: [3, 24], lean: 13, hF: [22, 36], wang: 3, ...LEG, head: 6 }), P({ hip: [1, 25], lean: 6, hF: [14, 36], wang: 70, ...LEG })],
-  a2: () => [P({ hip: [-3, 25], lean: -10, hF: [-2, 44], wang: 135, ...LEG, fF: [8, 0] }), P({ hip: [1, 25], lean: 8, hF: [14, 44], wang: 62, ...LEG }), P({ hip: [4, 24], lean: 16, hF: [22, 30], wang: -25, ...LEG, head: 8 }), P({ hip: [2, 25], lean: 6, hF: [14, 36], wang: 70, ...LEG })],
+  a1: () => [P({ hip: [-2, 25], lean: -6, hF: [3, 38], wang: 100, ...LEG, fF: [8, 0] }), P({ hip: [3, 24], lean: 12, hF: [20, 37], wang: 6, ...LEG, head: 6 }), P({ hip: [3, 24], lean: 13, hF: [22, 36], wang: 3, ...LEG, head: 6 }), P({ hip: [1, 25], lean: 6, hF: [14, 36], wang: 70, ...LEG })],
+  a2: () => [P({ hip: [-3, 25], lean: -10, hF: [-10, 38], wang: 165, ...LEG, fF: [8, 0] }), P({ hip: [1, 25], lean: 8, hF: [14, 44], wang: 62, ...LEG }), P({ hip: [4, 24], lean: 16, hF: [22, 30], wang: -25, ...LEG, head: 8 }), P({ hip: [2, 25], lean: 6, hF: [14, 36], wang: 70, ...LEG })],
   a3: () => { const f = SLAM(-5); f[2] = Object.assign({}, f[2], { hF: [23, 32], wang: -48 }); f[3] = Object.assign({}, f[3], { hF: [25, 31], wang: -52 }); return f; },
   jatk: () => [P({ hip: [0, 26], lean: 10, fF: [14, 14], fB: [-6, 8], hF: [20, 32], hB: [8, 40], wang: -30 }), P({ hip: [0, 26], lean: 10, fF: [15, 13], fB: [-6, 8], hF: [21, 31], hB: [8, 40], wang: -34 })],
   jdown: () => [P({ hip: [2, 24], lean: 24, fF: [10, 12], fB: [-4, 14], hF: [20, 32], hB: [14, 30], wang: -72 }), P({ hip: [2, 24], lean: 26, fF: [10, 12], fB: [-4, 14], hF: [20, 31], hB: [14, 29], wang: -78 })],
   special: () => spinFrames(6, (i, a) => P({ hip: [0, 22], lean: 4, fF: [10, 0], fB: [-10, 0], hF: [8, 44], hB: [4, 40], wang: a }))
 };
 ATK.salami = {
-  a1: () => [P({ hip: [-2, 25], lean: -6, hF: [2, 40], wang: 115, ...LEG, fF: [8, 0] }), P({ hip: [3, 24], lean: 12, hF: [19, 34], wang: 15, ...LEG, head: 6 }), P({ hip: [3, 24], lean: 13, hF: [20, 33], wang: 8, ...LEG, head: 6 }), P({ hip: [1, 25], lean: 6, hF: [14, 36], wang: 40, ...LEG })],
-  a2: () => [P({ hip: [-3, 25], lean: -10, hF: [-3, 42], wang: 150, ...LEG, fF: [8, 0] }), P({ hip: [1, 25], lean: 8, hF: [14, 42], wang: 70, ...LEG }), P({ hip: [4, 24], lean: 16, hF: [22, 28], wang: -12, ...LEG, head: 8 }), P({ hip: [2, 25], lean: 6, hF: [14, 36], wang: 40, ...LEG })],
-  a3: () => { const f = SLAM(10); f[2] = Object.assign({}, f[2], { hF: [14, 31], wang: -64 }); f[3] = Object.assign({}, f[3], { hF: [16, 27], wang: -70 }); return f; },
+  a1: () => [P({ hip: [-2, 25], lean: -6, hF: [-6, 36], wang: 160, ...LEG, fF: [8, 0] }), P({ hip: [3, 24], lean: 12, hF: [19, 34], wang: 15, ...LEG, head: 6 }), P({ hip: [3, 24], lean: 13, hF: [20, 33], wang: 8, ...LEG, head: 6 }), P({ hip: [1, 25], lean: 6, hF: [14, 36], wang: 40, ...LEG })],
+  a2: () => [P({ hip: [-3, 25], lean: -10, hF: [-8, 36], wang: 165, ...LEG, fF: [8, 0] }), P({ hip: [1, 25], lean: 8, hF: [14, 42], wang: 70, ...LEG }), P({ hip: [4, 24], lean: 16, hF: [22, 28], wang: -12, ...LEG, head: 8 }), P({ hip: [2, 25], lean: 6, hF: [14, 36], wang: 40, ...LEG })],
+  a3: () => { const f = SLAM(10); f[0] = Object.assign({}, f[0], { hF: [-8, 44], wang: 152 }); f[1] = Object.assign({}, f[1], { hF: [-6, 50], wang: 146 }); f[2] = Object.assign({}, f[2], { hF: [14, 31], wang: -64 }); f[3] = Object.assign({}, f[3], { hF: [16, 27], wang: -70 }); return f; },
   jatk: () => ATK.flag.jatk(), jdown: () => ATK.flag.jdown(),
   special: () => { const f = [[8, 60, 100], [12, 56, 50], [23, 22, -60], [25, 22, -78], [14, 40, 20], [4, 52, 90]]; return f.map((q, i) => P({ hip: [i >= 2 && i <= 3 ? 4 : 0, i >= 2 && i <= 3 ? 22 : 24], lean: i >= 2 && i <= 3 ? 26 : 0, head: i >= 2 && i <= 3 ? 16 : 0, fF: [14, 0], fB: [-12, 0], hF: [q[0], q[1]], hB: [q[0] - 4, q[1] - 2], wang: q[2] })); }
 };

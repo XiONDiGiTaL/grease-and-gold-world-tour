@@ -36,29 +36,21 @@ def build(name, spec):
     tor=P['torso'].copy(); hole=sil&(M['nearArm']|M['farArm']|M.get('weaponArea',np.zeros_like(sil)))&(xx>=int(spec['torsoLeft']*Q))&(xx<=int(spec['torsoRight']*Q))&(yy>=int(spec['torsoTop']*Q))&(yy<=int(spec['torsoBot']*Q))
     keep=(tor>0)&~hole; 
     if hole.any():
-        Hh,Ww=tor.shape
-        if spec.get('fillDir')=='texture':     # hidden garment: random denim texture sampled from the visible sleeve (no flat shards)
-            rng=np.random.default_rng(11); srcp=np.where((P['armN']>0)&(yy<int(130*Q)),P['armN'],0); vals=srcp[srcp>0]
-            Hh2,Ww2=tor.shape; tex=np.zeros(tor.shape,np.uint8); L=lambda i: int(sum(pal[i-1])); allv=vals[np.array([L(v) for v in vals])>260]
-            for y in range(Hh2):
-                band=srcp[max(0,y-4):y+5,:]; bv=band[band>0]; bv=bv[np.array([L(v) for v in bv])>260] if len(bv) else bv
-                if len(bv)<8: bv=allv
-                lm=np.array([L(v) for v in bv]); o=np.argsort(lm); mid=bv[o[int(len(bv)*.3):max(int(len(bv)*.85),int(len(bv)*.3)+1)]]
-                tex[y]=rng.choice(mid,size=Ww2)
-            tor=np.where(hole&M['torsoP'],tex,tor)
-        elif spec.get('fillDir')=='nearest':
-            d,(iy,ix)=ndimage.distance_transform_edt(~keep,return_indices=True)
-            filled=np.where(hole&(d<=spec.get('fillMax',60)), tor[iy,ix], 0); tor=np.where(hole,filled,tor)
-        else:
-            filled=tor.copy()
-            for y in range(Hh):
-                xs=np.where(hole[y])[0]
-                for x in xs:
-                    nx=x; stp=-1 if spec.get('fillDir')=='left' else 1
-                    while 0<=nx<Ww and not keep[y,nx] and abs(nx-x)<spec.get('fillMax',60)+60: nx+=stp       # continue the garment texture from the side
-                    if 0<=nx<Ww and keep[y,nx]: filled[y,x]=tor[y,nx]
-                    else: filled[y,x]=0
-            tor=np.where(hole,filled,tor)
+        # Diffusion inpainting: fill hidden garment from the surrounding visible pixels (multi-scale normalised convolution),
+        # then snap to the palette. Replaces the old row/nearest/texture fills that left streaks and patches.
+        rgbf=np.zeros(tor.shape+(3,),float)
+        for k,c in enumerate(pal): rgbf[tor==k+1]=c
+        srcok=(rgbf.sum(2)>170)&(spec['fillFilter'](rgbf) if spec.get('fillFilter') else True); kn=((tor>0)&~hole&srcok).astype(float); unknown=hole&(M['torsoP'] if 'torsoP' in M else True)
+        for sg in (1.2,2,3.5,6,10,16,26):
+            num=np.stack([ndimage.gaussian_filter(rgbf[...,c]*kn,sg) for c in range(3)],-1); den=ndimage.gaussian_filter(kn,sg)
+            take=unknown&(den>0.06); est=num/np.maximum(den[...,None],1e-6)
+            rgbf[take]=est[take]; kn[take]=1.0; unknown=unknown&~take
+        fill=hole&(kn>0)&(M['torsoP'] if 'torsoP' in M else True)
+        d2=((rgbf[fill][:,None,:]-pal[None,:,:])**2).sum(2); q=d2.argmin(1)+1
+        tor=np.where(hole,0,tor); tor[fill]=q.astype(tor.dtype)
+        if spec.get('fillFilter'):   # light denim texture so the filled area is not a flat gradient
+            rng=np.random.default_rng(5); sl=np.where((P['armN']>0)&(yy<int(130*Q)),P['armN'],0); sv=sl[sl>0]
+            if len(sv): r2=rng.random(tor.shape); tor=np.where(fill&(r2<.06),rng.choice(sv,size=tor.shape).astype(tor.dtype),tor)
     P['torso']=tor.astype(np.uint8)
     CL={}
     cls_fn=spec['classify']
@@ -87,7 +79,7 @@ def build(name, spec):
     return out
 def rect(x0,y0,x1,y1): return [(x0,y0),(x1,y0),(x1,y1),(x0,y1)]
 # ------------------------------------------------------------------ RICKY
-R=dict(colors=56,torsoLeft=335,torsoRight=800,torsoTop=330,torsoBot=1190,fillMax=70)
+R=dict(colors=56,torsoLeft=150,torsoRight=800,torsoTop=330,torsoBot=1190,fillMax=70)
 R['poly']={
  'head':rect(325,40,715,430),
  'torsoP':[(150,340),(450,335),(460,432),(790,432),(790,1190),(150,1190)],
@@ -100,7 +92,7 @@ R['poly']={
  'weaponArea':[(815,380),(1050,380),(1050,605),(905,605),(885,778),(815,778)]}
 R['derive']={
  'head':lambda M,yy,xx,Y,sk,sil,h,s,v: M['head'],
- 'torso':lambda M,yy,xx,Y,sk,sil,h,s,v: M['torsoP']&~(M['weaponP']&~M['fist']&(xx>Y(815)))&~((M['farArm'])&(xx>Y(745))),
+ 'torso':lambda M,yy,xx,Y,sk,sil,h,s,v: M['torsoP']&~(M['weaponP']&~M['fist']&(xx>Y(815)))&~((M['farArm'])&(xx>Y(745)))&~M['nearArm'],
  'armN':lambda M,yy,xx,Y,sk,sil,h,s,v: M['nearArm'],
  'upperNear':lambda M,yy,xx,Y,sk,sil,h,s,v: M['nearArm']&(yy<=Y(770)),
  'foreNear':lambda M,yy,xx,Y,sk,sil,h,s,v: M['nearArm']&(yy>=Y(745)),
@@ -114,11 +106,11 @@ R['joints']={'hip':(520,1100),'neck':(520,415),'shN':(330,500),'elN':(265,760),'
  'hipB':(410,1150),'knB':(405,1312),'anB':(400,1470),'soleB':(415,1575),'hipF':(590,1150),'knF':(595,1312),'anF':(590,1452),'soleF':(620,1555),'belt':(560,880)}
 R['order']=['weapon','upperNear','legB','footB','torso','legF','footF','head','foreNear','foreFar']
 # ------------------------------------------------------------------ V.V.
-V=dict(colors=56,torsoLeft=330,torsoRight=745,torsoTop=545,torsoBot=1190,fillMax=70)
+V=dict(colors=56,torsoLeft=338,torsoRight=745,torsoTop=545,torsoBot=1190,fillMax=70)
 V['poly']={
  'head':[(290,85),(712,85),(712,572),(300,572)],
  'hairArea':rect(112,395,485,945),
- 'torsoP':rect(300,545,745,1190),
+ 'torsoP':rect(338,545,745,1190),
  'nearArm':[(285,575),(440,575),(458,700),(440,900),(425,1040),(425,1250),(435,1332),(405,1402),(305,1402),(287,1322),(282,1100),(292,800),(300,640)],
  'farArm':[(640,760),(700,745),(755,700),(785,610),(850,568),(892,610),(908,690),(868,732),(830,792),(760,892),(700,938),(650,938),(628,860)],
  'micP':[(685,395),(852,395),(948,640),(948,708),(800,708),(690,525)],
@@ -128,11 +120,11 @@ def hairpix(M,yy,xx,Y,sk,sil,h,s,v): return M['hairArea']&~(M['head']&(xx>=Y(290
 V['derive']={
  'head':lambda M,yy,xx,Y,sk,sil,h,s,v: M['head'],
  'hair':hairpix,
- 'torso':lambda M,yy,xx,Y,sk,sil,h,s,v: M['torsoP']&~M['micP']&~hairpix(M,yy,xx,Y,sk,sil,h,s,v)&~(M['farArm']&(xx>Y(700))),
+ 'torso':lambda M,yy,xx,Y,sk,sil,h,s,v: M['torsoP']&~M['micP']&~hairpix(M,yy,xx,Y,sk,sil,h,s,v)&~(M['farArm']&(xx>Y(700)))&~M['nearArm'],
  'armN':lambda M,yy,xx,Y,sk,sil,h,s,v: M['nearArm'],
  'upperNear':lambda M,yy,xx,Y,sk,sil,h,s,v: M['nearArm']&(yy<=Y(1010)),
  'foreNear':lambda M,yy,xx,Y,sk,sil,h,s,v: M['nearArm']&(yy>=Y(985)),
- 'foreFar':lambda M,yy,xx,Y,sk,sil,h,s,v: M['farArm'],
+ 'foreFar':lambda M,yy,xx,Y,sk,sil,h,s,v: M['farArm']&ndimage.binary_dilation(sk&M['farArm'],iterations=2),
  'weapon':lambda M,yy,xx,Y,sk,sil,h,s,v: M['micP']&~sk&~(M['farArm']&sk),
  'legB':lambda M,yy,xx,Y,sk,sil,h,s,v: M['backLeg']&(yy<=Y(1850)),
  'footB':lambda M,yy,xx,Y,sk,sil,h,s,v: (yy>=Y(1846))&(xx<Y(560)),
@@ -178,7 +170,7 @@ R['classify']=classify_ricky; V['classify']=classify_vv
 
 # ------------------------------------------------------------------ JOHNNY (own reference, native 210x273 resolution)
 import colorsys as _cs
-J=dict(colors=48,torsoLeft=0,torsoRight=130,torsoTop=40,torsoBot=190,fillMax=90,fillDir='texture',weaponHole=True)
+J=dict(colors=48,torsoLeft=0,torsoRight=130,torsoTop=40,torsoBot=190,fillMax=90,weaponHole=True,fillFilter=lambda c:(c[...,2]>c[...,0]+8)&(c[...,2]>c[...,1]-4))
 J['poly']={
  'head':[(36,0),(88,0),(88,52),(80,66),(44,66),(36,52)],
  'torsoP':[(0,52),(60,44),(106,48),(112,66),(104,104),(100,150),(96,188),(0,188)],
@@ -190,19 +182,20 @@ J['poly']={
  'frontLeg':[(80,164),(132,166),(144,200),(148,238),(130,244),(118,222),(100,196),(84,178)]}
 def _salami(M,yy,xx,Y,sk,sil,h,s,v):
     skin=(h>=14)&(h<=42)&(s>.3)&(v>.4)
-    return M['salamiP']&~skin&~M['head']
+    return M['salamiP']&~skin&~M['head']&~M['farArm']
 J['derive']={
  'head':lambda M,yy,xx,Y,sk,sil,h,s,v: M['head'],
  'weapon':_salami,
  'torso':lambda M,yy,xx,Y,sk,sil,h,s,v: M['torsoP']&~_salami(M,yy,xx,Y,sk,sil,h,s,v)&~M['nearArm']&~M['farArm']&(yy<=Y(188)),
  'armN':lambda M,yy,xx,Y,sk,sil,h,s,v: M['nearArm']&~_salami(M,yy,xx,Y,sk,sil,h,s,v),
  'upperNear':lambda M,yy,xx,Y,sk,sil,h,s,v: M['nearArm']&(yy<=Y(112))&~_salami(M,yy,xx,Y,sk,sil,h,s,v),
- 'foreFar':lambda M,yy,xx,Y,sk,sil,h,s,v: M['farArm']&~_salami(M,yy,xx,Y,sk,sil,h,s,v),
+ 'foreFar':lambda M,yy,xx,Y,sk,sil,h,s,v: M['farArm']&sil,
+ 'armF':lambda M,yy,xx,Y,sk,sil,h,s,v: M['nearArm']&(yy<Y(138))&~_salami(M,yy,xx,Y,sk,sil,h,s,v),
  'legB':lambda M,yy,xx,Y,sk,sil,h,s,v: M['backLeg']&(yy<=Y(240)),
  'legF':lambda M,yy,xx,Y,sk,sil,h,s,v: M['frontLeg']&(yy<=Y(242)),
  'footB':lambda M,yy,xx,Y,sk,sil,h,s,v: (yy>=Y(238))&(xx<Y(64)),
  'footF':lambda M,yy,xx,Y,sk,sil,h,s,v: (yy>=Y(241))&(xx>=Y(110))}
-J['joints']={'hip':(78,162),'neck':(62,60),'belt':(78,160),'shN':(45,56),'elN':(14,112),'haN':(52,158),'shF':(100,58),'elF':(118,108),'haF':(142,124),'grip':(142,124),
+J['joints']={'hip':(78,162),'neck':(62,60),'belt':(78,160),'shN':(45,56),'elN':(14,112),'haN':(52,158),'shF':(100,58),'elF':(118,108),'haF':(142,124),'grip':(142,124),'wrN':(46,138),
  'hipB':(60,168),'knB':(42,205),'anB':(34,238),'soleB':(22,262),'hipF':(98,170),'knF':(122,206),'anF':(136,240),'soleF':(142,272)}
 J['order']=['legB','footB','torso','legF','footF','head','armN','weapon','foreFar']
 J['classify']=lambda nm,arr,rgb,h,s,v,xx,yy: np.zeros(arr.shape,np.uint8)
