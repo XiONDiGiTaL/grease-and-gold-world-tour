@@ -28,7 +28,11 @@ func _tex(p: String) -> Texture2D:
 
 func _ready() -> void:
   texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-  font = ThemeDB.fallback_font
+  var ff := FontFile.new()
+  ff.data = FileAccess.get_file_as_bytes("res://assets/PressStart2P.woff2")
+  ff.antialiasing = TextServer.FONT_ANTIALIASING_NONE
+  ff.hinting = TextServer.HINTING_NONE
+  font = ff
   var D = game.D
   CELL = int(D.cell)
   AX = int(D.anchor[0])
@@ -58,7 +62,7 @@ func txt(s: String, x: float, y: float, size: int, col: Color, align := 0) -> vo
     px = x - w / 2.0
   elif align == 2:
     px = x - w
-  draw_string_outline(font, Vector2(px, y), s, HORIZONTAL_ALIGNMENT_LEFT, -1, size, max(2, int(size * 0.25)), INK)
+  draw_string_outline(font, Vector2(px, y), s, HORIZONTAL_ALIGNMENT_LEFT, -1, size, 3, INK)
   draw_string(font, Vector2(px, y), s, HORIZONTAL_ALIGNMENT_LEFT, -1, size, col)
 
 func box(x: float, y: float, w: float, h: float, fill: Color, border: Color, bw: float) -> void:
@@ -108,11 +112,11 @@ func _draw() -> void:
     if s == "pause":
       ui_pause()
     elif s == "gameover":
-      ui_end("GAME OVER", RED, ["Score  %06d" % game.score], "Enter: continue stage   Esc: title")
+      ui_end("GAME OVER", RED, ["SCORE %07d" % game.score], "ENTER: CONTINUE   ESC: TITLE")
     elif s == "stageclear":
-      ui_end("STAGE CLEAR", GOLD, [game.stage.name, "Score  %06d" % game.score, "Lives  %d" % game.lives], "Enter: next stop on the tour")
+      ui_end("STAGE CLEAR", GOLD, [game.stage.name, "SCORE %07d" % game.score, "LIVES %d" % game.lives], "ENTER: NEXT STOP")
     elif s == "victory":
-      ui_end("WORLD TOUR COMPLETE", GOLD2, ["Grease & Gold take the crown", "Final score  %06d" % game.score], "Enter: back to title")
+      ui_end("TOUR COMPLETE", GOLD2, ["GREASE & GOLD TAKE THE CROWN", "FINAL SCORE %07d" % game.score], "ENTER: TITLE")
 
 func draw_title_bg() -> void:
   var si := 0 if game.state == "title" else 3
@@ -245,104 +249,140 @@ func draw_item(o: Dictionary, x: float, y: float) -> void:
       var a: float = o.t * 0.02 + k * 2.1
       draw_texture(spt, Vector2(roundf(x + cos(a * 3.0) * 14.0) - 4, roundf(y - zz - h * 0.5 + sin(a * 5.0) * 9.0) - 4))
 
-# ---------------------------------------------------------------- UI
+# ---------------------------------------------------------------- UI (mirrors src/ui.js)
+const REDD := Color("4a0f12")
+const YEL := Color("ffd23a")
+const BLU := Color("38b6ff")
+const BLUD := Color("0d2a55")
+const PANEL := Color("1d1030")
+
+func frame(x: float, y: float, w: float, h: float, col: Color) -> void:
+  draw_rect(Rect2(x - 3, y - 3, w + 6, h + 6), INK)
+  draw_rect(Rect2(x - 2, y - 2, w + 4, h + 4), col)
+  draw_rect(Rect2(x, y, w, h), PANEL)
+
+func gauge(x: float, y: float, w: float, h: float, pct: float, fill: Color, back: Color, hi: Color) -> void:
+  draw_rect(Rect2(x - 2, y - 2, w + 4, h + 4), INK)
+  draw_rect(Rect2(x - 1, y - 1, w + 2, h + 2), CREAM)
+  draw_rect(Rect2(x, y, w, h), back)
+  var fw := roundf(w * clampf(pct, 0.0, 1.0))
+  draw_rect(Rect2(x, y, fw, h), fill)
+  draw_rect(Rect2(x, y, fw, maxf(1.0, floorf(h / 3.0))), hi)
+  for i in range(1, 12):
+    draw_rect(Rect2(x + w * i / 12.0 - 0.5, y, 1, h), Color(0, 0, 0, 0.35))
+
+func stat_row(x: float, y: float, label: String, v: int) -> void:
+  txt(label, x, y, 6, CREAM)
+  for i in 5:
+    draw_rect(Rect2(x + 40 + i * 11, y - 6, 9, 7), INK)
+    draw_rect(Rect2(x + 41 + i * 11, y - 5, 7, 5), GOLD if i < v else Color("3a2a4a"))
+
 func ui_title() -> void:
-  draw_rect(Rect2(GW / 2.0 - 128, 66, 256, 22), MAG)
-  txt("GREASE", GW / 2.0 - 4, 60, 34, GOLD, 2)
-  txt("&", GW / 2.0 + 15, 60, 34, MAG, 1)
-  txt("GOLD", GW / 2.0 + 28, 60, 34, GOLD, 0)
-  txt("W O R L D   T O U R", GW / 2.0, 83, 11, CREAM, 1)
+  draw_rect(Rect2(0, 30, GW, 88), Color(0.055, 0.024, 0.094, 0.55))
+  txt("GREASE & GOLD", GW / 2.0 + 2, 68, 24, MAG, 1)
+  txt("GREASE & GOLD", GW / 2.0, 66, 24, GOLD, 1)
+  draw_rect(Rect2(86, 76, 212, 18), MAG)
+  draw_rect(Rect2(86, 76, 212, 2), INK)
+  draw_rect(Rect2(86, 92, 212, 2), INK)
+  txt("WORLD TOUR", GW / 2.0, 90, 16, CREAM, 1)
   if ((game.t >> 5) & 1) == 1:
-    txt("PRESS ENTER / START", GW / 2.0, 122, 9, CREAM, 1)
-  txt("Move: arrows/WASD   Attack: J   Jump: K   Special (hold): L   Grab: U   Pause: Esc", GW / 2.0, 209, 5, DIM, 1)
-  txt("Godot port - playtest build", GW / 2.0, 214, 4, DIM, 1)
+    txt("PRESS ENTER / START", GW / 2.0, 116, 8, CREAM, 1)
+  txt("J ATTACK  K JUMP  L SPECIAL  U GRAB", GW / 2.0, 211, 6, DIM, 1)
+  txt("GODOT PORT - PLAYTEST BUILD", GW / 2.0, 216, 6, Color("6a5a80"), 1)
 
 func ui_select() -> void:
-  txt("CHOOSE YOUR FIGHTER", GW / 2.0, 13, 11, GOLD, 1)
+  txt("SELECT YOUR FIGHTER", GW / 2.0, 13, 8, GOLD, 1)
   var ids: Array = game.D.players
   for i in 3:
     var d: Dictionary = game.D.CH[ids[i]]
     var cx: float = GW / 2.0 + (i - 1) * 124.0
     var x := cx - 56.0
-    var y := 17.0
+    var y := 19.0
     var sl: bool = i == game.sel
-    box(x, y, 112, 190, Color("2a1238") if sl else Color("1a0d26"), GOLD if sl else Color("4a3a5a"), 2 if sl else 1)
+    frame(x, y, 112, 186, GOLD if sl else Color("5a4a6a"))
     var a: Dictionary = game.D.atlas[d.kit].idle
     var fr: int = (game.t / 14) % 4 if sl else 0
-    draw_texture_rect_region(sheets[d.kit], Rect2(cx - 52, y + 3, 104, 104), Rect2(fr * CELL + AX - 52, int(a.row) * CELL + AY - 100, 104, 104), Color(1, 1, 1, 1.0 if sl else 0.6))
-    txt(d.name, cx, y + 121, 11, GOLD2 if sl else CREAM, 1)
-    txt(d.weapon, cx, y + 130, 6, DIM, 1)
-    txt("SPECIAL", x + 8, y + 142, 6, MAG)
-    txt(d.special, x + 46, y + 142, 6, CREAM)
+    draw_texture_rect_region(sheets[d.kit], Rect2(cx - 52, y + 3, 104, 104), Rect2(fr * CELL + AX - 52, int(a.row) * CELL + AY - 100, 104, 104), Color(1, 1, 1, 1.0 if sl else 0.55))
+    txt(String(d.name).to_upper(), cx, y + 120, 8, GOLD2 if sl else CREAM, 1)
+    txt(String(d.weapon).to_upper().substr(0, 18), cx, y + 129, 6, DIM, 1)
+    txt(String(d.special).to_upper(), cx, y + 141, 6, MAG, 1)
     var k := 0
-    for lab in ["power", "speed", "reach", "health"]:
-      txt(lab.to_upper(), x + 8, y + 154 + k * 9, 6, CREAM)
-      for j in 5:
-        draw_rect(Rect2(x + 60 + j * 9, y + 148.4 + k * 9, 7.4, 6), GOLD if j < int(d.stats[lab]) else Color("3a2a4a"))
+    for lab in [["POW", "power"], ["SPD", "speed"], ["RCH", "reach"], ["HP", "health"]]:
+      stat_row(x + 8, y + 154 + k * 9, lab[0], int(d.stats[lab[1]]))
       k += 1
-  txt(String(game.D.CH[ids[game.sel]].blurb).replace("|", " "), GW / 2.0, 214, 6, CREAM, 1)
+  var bl: PackedStringArray = String(game.D.CH[ids[game.sel]].blurb).to_upper().split("|")
+  for m in bl.size():
+    txt(bl[m], GW / 2.0, 211 + m * 5.5, 6, CREAM, 1)
 
 func ui_hud() -> void:
   if game.players.is_empty():
     return
   var p: Dictionary = game.players[0]
   var d: Dictionary = p.def
-  box(6, 6, 44, 44, INK, GOLD, 2)
-  draw_texture_rect(portraits[d.kit], Rect2(8, 8, 40, 40), false)
-  txt(d.name, 56, 15, 9, GOLD2)
-  txt("x%d" % maxi(0, game.lives), 156, 15, 9, CREAM, 2)
-  txt("HP", 56, 27, 6, CREAM)
+  frame(7, 6, 40, 40, GOLD)
+  draw_texture_rect(portraits[d.kit], Rect2(7, 6, 40, 40), false)
+  draw_rect(Rect2(7, 36, 14, 10), INK)
+  txt("1P", 8, 44, 6, GOLD2)
+  txt(String(d.name).to_upper(), 56, 15, 8, GOLD2)
+  txt("x%d" % maxi(0, game.lives), 150, 15, 8, CREAM, 2)
   var low: bool = p.hp / p.maxhp < 0.3 and ((game.t >> 3) & 1) == 1
-  bar(80, 20.5, 76, 8, p.hp / p.maxhp, Color("ff7a5a") if low else Color("e0322e"), Color("3a1420"))
-  txt("HYPE", 56, 38, 6, MAG)
-  bar(80, 32.5, 76, 6, p.hype / 100.0, GOLD2 if p.state == "special" else GOLD, Color("33210a"))
-  txt("%06d" % game.score, GW / 2.0 + 20, 16, 13, CREAM, 1)
-  txt("SCORE", GW / 2.0 + 20, 24, 5, DIM, 1)
+  gauge(58, 20, 92, 8, p.hp / p.maxhp, Color("ff6a4a") if low else YEL, REDD, Color("fff0a0"))
+  gauge(58, 32, 92, 5, p.hype / 100.0, Color("9be6ff") if p.state == "special" else BLU, BLUD, Color("d6f4ff"))
+  txt("HYPE", 58, 45, 6, Color("9be6ff"))
+  txt("SCORE", GW / 2.0 + 6, 11, 6, DIM, 1)
+  txt("%07d" % game.score, GW / 2.0 + 6, 21, 8, CREAM, 1)
   if game.last_enemy_t > 0 and game.last_enemy != null and not game.last_enemy.boss:
     var e = game.last_enemy
-    txt(e.def.name, GW - 8, 15, 7, CREAM, 2)
-    bar(GW - 98, 19, 90, 6, e.hp / e.maxhp, MAG, Color("2a1030"))
+    frame(331, 6, 40, 40, Color("b0407a"))
+    draw_texture_rect(portraits[e.kitId], Rect2(331, 6, 40, 40), false)
+    txt(String(e.def.name).to_upper().substr(0, 14), 326, 15, 6, CREAM, 2)
+    gauge(236, 20, 90, 8, e.hp / e.maxhp, Color("ff5aa8"), Color("3a0f2a"), Color("ffc6e0"))
   for e in game.enemies:
     if e.boss and e.state != "dead" and e.state != "spawn":
-      txt(String(e.def.name).to_upper(), GW / 2.0, GH - 19, 9, GOLD2, 1)
-      bar(GW / 2.0 - 110, GH - 15, 220, 9, e.hp / e.maxhp, MAG, Color("2a1030"))
+      frame(40, 170, 30, 30, Color("b0407a"))
+      draw_texture_rect(portraits[e.kitId], Rect2(40, 170, 30, 30), false)
+      txt(String(e.def.name).to_upper(), 78, 181, 8, GOLD2)
+      gauge(78, 186, 266, 10, e.hp / e.maxhp, Color("ff5aa8"), Color("3a0f2a"), Color("ffc6e0"))
       break
   if game.combo.n >= 2 and game.combo.t > 0:
     game.combo.pop = maxf(0.0, game.combo.pop - 0.5)
-    txt("%d HITS" % game.combo.n, 8, 66, 10 + int(game.combo.pop * 0.6), GOLD2 if game.combo.n >= 8 else CREAM)
+    txt("%d HITS" % game.combo.n, 8, 62, 8 + int(game.combo.pop * 0.8), GOLD2 if game.combo.n >= 8 else CREAM)
   if game.state == "play":
     if game.banner > 0:
       var al: float = clampf(minf(game.banner / 20.0, (170 - game.banner) / 12.0 + 0.2), 0.0, 1.0)
-      draw_rect(Rect2(0, 78, GW, 52), Color(0.078, 0.035, 0.11, 0.78 * al))
+      draw_rect(Rect2(0, 78, GW, 54), Color(0.078, 0.035, 0.11, 0.85 * al))
       draw_rect(Rect2(0, 78, GW, 2), Color(MAG, al))
-      draw_rect(Rect2(0, 128, GW, 2), Color(MAG, al))
-      txt(game.stage.tour, GW / 2.0, 94, 8, Color(MAG, al), 1)
-      txt(String(game.stage.name).to_upper(), GW / 2.0, 118, 22, Color(GOLD, al), 1)
+      draw_rect(Rect2(0, 130, GW, 2), Color(MAG, al))
+      txt(String(game.stage.tour).replace("  ", " "), GW / 2.0, 94, 8, Color(MAG, al), 1)
+      txt(String(game.stage.name).to_upper(), GW / 2.0, 120, 16, Color(GOLD, al), 1)
     if game.boss_banner > 0 and ((game.boss_banner >> 3) & 1) == 1:
-      txt("WARNING   BOSS", GW / 2.0, 84, 18, RED, 1)
+      txt("WARNING", GW / 2.0, 80, 16, RED, 1)
     if game.wave_state == "walk" and game.wave_idx < game.stage.waves.size() and game.go_t > 10 and game.wave_idx > 0 and ((game.go_t >> 4) & 1) == 1:
-      txt("GO", GW - 44, 86, 18, GOLD2, 1)
-      draw_rect(Rect2(GW - 30, 91, 10, 6), GOLD2)
-      draw_colored_polygon(PackedVector2Array([Vector2(GW - 20, 86), Vector2(GW - 10, 94), Vector2(GW - 20, 102)]), GOLD2)
+      txt("GO", GW - 46, 90, 16, GOLD2, 1)
+      draw_rect(Rect2(GW - 31, 86, 24, 14), INK)
+      draw_rect(Rect2(GW - 30, 91, 10, 5), GOLD2)
+      draw_colored_polygon(PackedVector2Array([Vector2(GW - 20, 87), Vector2(GW - 9, 93.5), Vector2(GW - 20, 100)]), GOLD2)
     if game.flash_t > 0:
       draw_rect(Rect2(0, 0, GW, GH), Color(1, 1, 1, game.flash_t / 10.0))
 
 func ui_pause() -> void:
-  draw_rect(Rect2(0, 0, GW, GH), Color(0.055, 0.024, 0.094, 0.78))
-  txt("PAUSED", GW / 2.0, 44, 20, GOLD, 1)
-  var items := ["Resume", "Restart stage", "Hide controls" if game.show_help else "Controls", "Quit to title"]
+  draw_rect(Rect2(0, 0, GW, GH), Color(0.055, 0.024, 0.094, 0.82))
+  txt("PAUSED", GW / 2.0, 40, 16, GOLD, 1)
+  var items := ["RESUME", "RESTART STAGE", "HIDE CONTROLS" if game.show_help else "CONTROLS", "QUIT TO TITLE"]
   for i in 4:
-    txt(("> " if i == game.menu else "  ") + items[i], GW / 2.0 - 48, 70 + i * 15, 10, GOLD2 if i == game.menu else CREAM)
+    txt(("> " if i == game.menu else "  ") + items[i], GW / 2.0 - 70, 66 + i * 14, 8, GOLD2 if i == game.menu else CREAM)
   if game.show_help:
-    var help := [["Move", "Arrows / WASD"], ["Attack (tap x3 = combo)", "J or Z"], ["Jump", "K, X or Space"], ["Special (hold)", "L or C"], ["Grab / Throw", "U, V or I"], ["Pause", "Esc or P"], ["Mute", "M"], ["Air attacks", "Attack in air / Down+Attack = dive"], ["Gamepad", "A jump, X attack, B special, Y grab, Start"]]
+    var help := [["MOVE", "ARROWS / WASD"], ["ATTACK", "J / Z  TAP x3"], ["JUMP", "K / X / SPACE"], ["SPECIAL", "HOLD L / C"], ["GRAB+THROW", "U / V / I"], ["AIR ATTACK", "ATTACK IN AIR"], ["DIVE", "DOWN + AIR ATTACK"], ["PAUSE / MUTE", "ESC / M"]]
     for i in help.size():
-      txt(help[i][0], GW / 2.0 - 150, 144 + i * 7.2, 5, CREAM)
-      txt(help[i][1], GW / 2.0 + 10, 144 + i * 7.2, 5, DIM)
+      txt(help[i][0], 60, 136 + i * 9, 6, CREAM)
+      txt(help[i][1], 170, 136 + i * 9, 6, DIM)
 
 func ui_end(title: String, col: Color, lines: Array, hint: String) -> void:
-  draw_rect(Rect2(0, 0, GW, GH), Color(0.055, 0.024, 0.094, 0.8))
-  txt(title, GW / 2.0, 70, 20 if title.length() > 12 else 26, col, 1)
+  draw_rect(Rect2(0, 0, GW, GH), Color(0.055, 0.024, 0.094, 0.84))
+  var sz := 16 if title.length() > 11 else 24
+  txt(title, GW / 2.0 + 2, 68, sz, MAG, 1)
+  txt(title, GW / 2.0, 66, sz, col, 1)
   for i in lines.size():
-    txt(lines[i], GW / 2.0, 98 + i * 16, 11, CREAM, 1)
+    txt(String(lines[i]).to_upper(), GW / 2.0, 98 + i * 16, 8, CREAM, 1)
   if ((game.t >> 5) & 1) == 1:
     txt(hint, GW / 2.0, 176, 8, GOLD2, 1)
