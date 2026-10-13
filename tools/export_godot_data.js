@@ -9,7 +9,7 @@ const data = { Z: S.Z, GS: S.GS, cell: S.CELL, anchor: [S.AX, S.AY], const: G.CO
 fs.writeFileSync(path.join(root, 'data', 'game_data.json'), JSON.stringify(data));
 const save = (b, p) => fs.writeFileSync(path.join(root, 'assets', p), b.toCanvas(mk).toBuffer('image/png'));
 ['crate', 'barrel', 'bin', 'boxes'].forEach(t => save(S.makeProp(t), 'prop_' + t + '.png'));
-fs.mkdirSync(path.join(root, 'assets', 'music'), { recursive: true }); ['arcade_tune.mp3', 'i_dont_kneel.mp3'].forEach(f => fs.copyFileSync(path.join(__dirname, '..', 'assets', 'music', f), path.join(root, 'assets', f)));
+['arcade_tune.mp3', 'i_dont_kneel.mp3'].forEach(f => fs.copyFileSync(path.join(__dirname, '..', 'assets', 'music', f), path.join(root, 'assets', f)));
 ['adana', 'shish', 'doner', 'lahmacun', 'kunefe', 'spit'].forEach(t => save(S.makeFood(t), 'food_' + t + '.png'));
 const fx = S.makeFx(); fx.spark.forEach((b, i) => save(b, 'fx_spark' + i + '.png')); fx.boom.forEach((b, i) => save(b, 'fx_boom' + i + '.png')); fx.dust.forEach((b, i) => save(b, 'fx_dust' + i + '.png')); fx.sparkle.forEach((b, i) => save(b, 'fx_sparkle' + i + '.png')); save(fx.ko, 'fx_ko.png'); save(fx.glow, 'fx_glow.png');
 G.STAGES.forEach((st, i) => { const bg = G.buildBackdrop(st, i); ['far', 'mid', 'floor'].forEach(l => fs.writeFileSync(path.join(root, 'assets', 'bg', `stage${i}_${l}.png`), bg[l].toBuffer('image/png'))); });
