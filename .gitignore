@@ -1,2 +1,2 @@
-*.import
-.godot/
+node_modules/
+godot/.godot/
