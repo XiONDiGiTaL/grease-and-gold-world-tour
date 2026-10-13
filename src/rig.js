@@ -31,15 +31,7 @@ const V = {
   ricky: { art: 'ricky', hs: 1.0 },
   vv: { art: 'vv', hs: 1.0 },
   johnny: { art: 'ricky', tint: { skin: { h: 24, s: .58, vMul: .66 }, coat: { h: 212, s: .5, vMul: .9 }, fleece: { h: 208, s: .28, vMul: 1.0 }, shirt: { vMap: [.8, .9], s: 0 }, pants: { h: 208, s: .36, vMap: [.42, 2.3] }, shoes: { s: .05, vMap: [.62, .8] }, hair: { vMul: 1.0 }, shades: { fill: [18, 20, 26] }, mustache: { vMul: 1 } }, head: 'afro', weapon: 'salami' },
-  guard: { art: 'ricky', tint: { skin: { h: 20, s: .4, vMul: 1.0 }, coat: { h: 222, s: .72, vMul: .55 }, fleece: { h: 215, s: .28, vMul: .92 }, shirt: { fill: [190, 205, 235] }, pants: { h: 222, s: .7, vMul: .62 }, shoes: { s: .1, vMul: .4 }, shades: { fill: [226, 168, 128] }, mustache: { fill: [226, 168, 128] } }, head: 'cap', capC: [28, 44, 100] },
-  exec: { art: 'ricky', tint: { skin: { h: 22, s: .38, vMul: 1.02 }, coat: { h: 226, s: .1, vMul: .62 }, fleece: { s: .04, vMul: 1.0 }, shirt: { fill: [244, 244, 248] }, pants: { h: 226, s: .1, vMul: .78 }, shoes: { s: .1, vMul: .4 }, hair: { h: 25, s: .55, vMul: 1.9 }, shades: { fill: [230, 176, 138] }, mustache: { fill: [230, 176, 138] } } },
-  heavy: { art: 'ricky', xs: 1.34, tint: { skin: { h: 14, s: .42, vMul: .98 }, coat: { s: .08, vMul: .46 }, fleece: { s: .05, vMul: .8 }, shirt: { fill: [240, 240, 240] }, pants: { s: .1, vMul: .8 }, shoes: { s: .1, vMul: .4 }, shades: { fill: [217, 154, 120] }, mustache: { fill: [217, 154, 120] } }, head: 'bald' },
-  brawler: { art: 'ricky', tint: { skin: { h: 20, s: .4, vMul: 1.0 }, coat: { h: 8, s: .62, vMul: .78 }, fleece: { s: .06, vMul: .78 }, shirt: { fill: [150, 150, 140] }, pants: { h: 82, s: .34, vMap: [.2, 1.6] }, shoes: { h: 28, s: .4, vMul: .5 }, shades: { fill: [214, 160, 124] }, mustache: { h: 25, s: .4, vMul: 2.4 } }, head: 'beanie', capC: [120, 44, 44] },
-  raider: { art: 'ricky', tint: { skin: { h: 24, s: .5, vMul: .88 }, coat: { h: 78, s: .48, vMul: .68 }, fleece: { h: 62, s: .34, vMul: .9 }, shirt: { fill: [58, 62, 42] }, pants: { h: 60, s: .22, vMap: [.2, 1.5] }, shoes: { h: 28, s: .4, vMul: .45 }, shades: { fill: [58, 160, 122] }, mustache: { vMul: 1 } }, head: 'cap', capC: [64, 74, 40] },
-  ledger: { art: 'ricky', tint: { skin: { h: 22, s: .35, vMul: 1.05 }, coat: { h: 140, s: .6, vMul: .42 }, fleece: { s: .04, vMul: 1.0 }, shirt: { fill: [240, 240, 240] }, pants: { h: 140, s: .5, vMul: .8 }, shoes: { s: .1, vMul: .4 }, hair: { fill: [232, 232, 238] }, shades: { fill: [72, 209, 122] }, mustache: { fill: [232, 232, 238] } } },
-  bigtony: { art: 'ricky', xs: 1.3, tint: { skin: { h: 18, s: .5, vMul: .82 }, coat: { h: 350, s: .72, vMul: .62 }, fleece: { h: 40, s: .25, vMul: .98 }, shirt: { fill: [234, 223, 192] }, pants: { s: .08, vMul: .6 }, shoes: { s: .1, vMul: .4 }, shades: { fill: [196, 142, 108] }, mustache: { vMul: 1 } }, head: 'bald' },
   mara: { art: 'vv', tint: { coat: { h: 350, s: .66, vMul: 1.15 }, hair: { h: 18, s: .5, vMul: .62 }, pants: { h: 24, s: .5, vMap: [0, 1.7] }, skin: { h: 22, s: .45, vMul: .92 } } },
-  auditor: { art: 'ricky', tint: { skin: { h: 22, s: .3, vMul: 1.0 }, coat: { s: .08, vMul: .26 }, fleece: { h: 44, s: .8, vMul: .95 }, shirt: { fill: [232, 216, 160] }, pants: { s: .08, vMul: .3 }, shoes: { s: .1, vMul: .32 }, shades: { fill: [212, 163, 28] }, mustache: { fill: [226, 170, 134] } } }
 };
 
 /* ---- piece bitmaps (recoloured, head variants, prescaled to SS x final px) ---- */
@@ -85,13 +77,29 @@ function drawPiece(hi, HW, pc, J, pivot, world, rot, mul, clipY) {
   }
 }
 const ang = (a, b) => Math.atan2(b[1] - a[1], b[0] - a[0]);
+const smooth = (t) => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
+/* Linear-blend skinning of one limb texture over a 3-joint chain (root, mid, end): the limb bends continuously at the knee/elbow and,
+   optionally, blends into the torso transform near the root so hips/shoulders never tear. Forward-splats 2x2 into the hi-res buffer. */
+function skinLimb(hi, HW, pc, f, A0, B0, C0, Aw, Bw, Cw, torsoFn, clipY) {
+  const ax = C0[0] - A0[0], ay = C0[1] - A0[1], len = Math.hypot(ax, ay), ux = ax / len, uy = ay / len, tk = (B0[0] - A0[0]) * ux + (B0[1] - A0[1]) * uy, r = .13 * len, rh = .2 * len;
+  const th1 = ang(Aw, Bw) - ang(A0, B0), th2 = ang(Bw, Cw) - ang(B0, C0), c1 = Math.cos(th1), s1 = Math.sin(th1), c2 = Math.cos(th2), s2 = Math.sin(th2), yMax = clipY === undefined ? HW - 1 : clipY;
+  for (let sy = 0; sy < pc.H; sy++) for (let sx = 0; sx < pc.W; sx++) {
+    const si = (sy * pc.W + sx) * 4, al = pc.d[si + 3]; if (al <= 0) continue;
+    const px = pc.ox + (sx + .5) / pc.fs, py = pc.oy + (sy + .5) / pc.fs, tau = (px - A0[0]) * ux + (py - A0[1]) * uy, w2 = smooth((tau - (tk - r)) / (2 * r));
+    const d1x = (px - A0[0]) * f, d1y = (py - A0[1]) * f, d2x = (px - B0[0]) * f, d2y = (py - B0[1]) * f;
+    let X = (Aw[0] + d1x * c1 - d1y * s1) * (1 - w2) + (Bw[0] + d2x * c2 - d2y * s2) * w2, Y = (Aw[1] + d1x * s1 + d1y * c1) * (1 - w2) + (Bw[1] + d2x * s2 + d2y * c2) * w2;
+    if (torsoFn) { const wt = 1 - smooth(tau / rh); if (wt > 0) { const T = torsoFn(px, py); X = T[0] * wt + X * (1 - wt); Y = T[1] * wt + Y * (1 - wt); } }
+    const hx = Math.floor(X * SS), hy = Math.floor(Y * SS);
+    for (let oy = 0; oy < 2; oy++) for (let ox = 0; ox < 2; ox++) { const x = hx + ox, y = hy + oy; if (x < 0 || y < 0 || x >= HW || y > yMax) continue; const di = (y * HW + x) * 4, ia = 1 - al; hi[di] = pc.d[si] * al + hi[di] * ia; hi[di + 1] = pc.d[si + 1] * al + hi[di + 1] * ia; hi[di + 2] = pc.d[si + 2] * al + hi[di + 2] * ia; hi[di + 3] = al + hi[di + 3] * ia; }
+  }
+}
 const dist = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1]);
 
 function renderFrame(id, pose, anim) {
   const K = kitPieces(id), A = K.A, J = A.J, f = K.f, P = K.P, k = S.K[id], s = k.scale, v = K.v;
   const lean = rad(pose.lean), cl = Math.cos(lean), sl = Math.sin(lean), HW = CELL * SS, hi = new Float32Array(HW * HW * 4);
   const L = (a, b) => dist(J[a], J[b]) * f;
-  const Lth = (L('hipB', 'knB') + L('hipF', 'knF')) / 2, Lsh = (L('knB', 'anB') + L('knF', 'anF')) / 2, lamL = (Lth + Lsh) / (26 * s);
+  const Lth = (L('hipB', 'knB') + L('hipF', 'knF')) / 2, Lsh = (L('knB', 'anB') + L('knF', 'anF')) / 2, ankH = (J.soleB[1] - J.anB[1]) * f, lamL = (Lth + Lsh + ankH) / (26 * s);
   const upperLen = dist(J.shN, J.elN) * f, foreN = dist(J.elN, J.haN) * f, foreF = dist(J.elF, J.haF) * f;
   const lamAN = (upperLen + foreN) / (18 * s), lamAF = (upperLen + foreF) / (18 * s);
   const hipS = [AX + pose.hip[0] * s * lamL, AY - pose.hip[1] * s * lamL];
@@ -105,18 +113,19 @@ function renderFrame(id, pose, anim) {
     const r = S.ik(hp[0], hp[1], sole[0] + offA[0], sole[1] + offA[1], dist(J['hip' + sfx], J['kn' + sfx]) * f, dist(J['kn' + sfx], J['an' + sfx]) * f, pose.legBend); if (r.mid[1] > AY - 3) r.mid[1] = AY - 3;
     return { hp, knee: r.mid, ankle: r.end, sole: [r.end[0] - offA[0], r.end[1] - offA[1]], tR: ang(hp, r.mid) - ang(J['hip' + sfx], J['kn' + sfx]), sR: ang(r.mid, r.end) - ang(J['kn' + sfx], J['an' + sfx]), sfx }; };
   const lB = leg('B', pose.fB), lF = leg('F', pose.fF);
-  const drawLeg = (l) => { draw('shin' + l.sfx, J['kn' + l.sfx], l.knee, l.sR); draw('thigh' + l.sfx, J['hip' + l.sfx], l.hp, l.tR); draw('foot' + l.sfx, J['sole' + l.sfx], l.sole, 0); };
+  const tilt = (l, foot) => { const lift = Math.min(8, Math.max(0, foot[1])); return lift > .5 ? rad((foot[0] < 0 ? 1 : -.45) * lift * 3.2) : 0; };
+  const drawLeg = (l, foot) => { if (P['leg' + l.sfx]) skinLimb(hi, HW, P['leg' + l.sfx], f, J['hip' + l.sfx], J['kn' + l.sfx], J['an' + l.sfx], l.hp, l.knee, l.ankle, (x, y) => tp([x, y]), clipOn ? groundClip : undefined); draw('foot' + l.sfx, J['an' + l.sfx], l.ankle, tilt(l, foot)); };
   // arms
   const shN = tp(J.shN), shF = tp(J.shF), hN = handTarget(shN, pose.hB, lamAN), hF = handTarget(shF, pose.hF, lamAF);
   const aN = S.ik(shN[0], shN[1], hN[0], hN[1], upperLen, foreN, [-.4, 1]), aF = S.ik(shF[0], shF[1], hF[0], hF[1], upperLen, foreF, [-.4, 1]);
   const neck = tp(J.neck), headRot = rad(pose.head), hairP = J.hairP ? tp(J.hairP) : null;
   // draw order (back to front)
   if (P.hair) draw('hair', J.hairP, hairP, headRot * .5 - lean * .35);
-  drawLeg(lB);
+  drawLeg(lB, pose.fB);
   draw('torso', J.hip, hipS, lean);
-  drawLeg(lF);
+  drawLeg(lF, pose.fF);
   draw('head', J.neck, neck, headRot);
-  draw('upperNear', J.shN, shN, ang(shN, aN.mid) - ang(J.shN, J.elN)); draw('foreNear', J.elN, aN.mid, ang(aN.mid, aN.end) - ang(J.elN, J.haN));
+  if (P.armN) skinLimb(hi, HW, P.armN, f, J.shN, J.elN, J.haN, shN, aN.mid, aN.end, (x, y) => tp([x, y]), clipOn ? groundClip : undefined);
   const rotF = ang(aF.mid, aF.end) - ang(J.elF, J.haF), gx = (J.grip[0] - J.elF[0]) * f, gy = (J.grip[1] - J.elF[1]) * f, gripW = [aF.mid[0] + gx * Math.cos(rotF) - gy * Math.sin(rotF), aF.mid[1] + gx * Math.sin(rotF) + gy * Math.cos(rotF)];
   const wk = k.weapon, ext = (pose.ext || 0) * s;
   if (P.weapon && wk === (id === 'ricky' ? 'flag' : id === 'vv' ? 'mic' : '#')) {

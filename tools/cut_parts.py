@@ -85,19 +85,18 @@ R['poly']={
 R['derive']={
  'head':lambda M,yy,xx,Y,sk,sil,h,s,v: M['head'],
  'torso':lambda M,yy,xx,Y,sk,sil,h,s,v: M['torsoP']&~(M['weaponP']&~M['fist']&(xx>Y(815)))&~((M['farArm'])&(xx>Y(745))),
+ 'armN':lambda M,yy,xx,Y,sk,sil,h,s,v: M['nearArm'],
  'upperNear':lambda M,yy,xx,Y,sk,sil,h,s,v: M['nearArm']&(yy<=Y(770)),
  'foreNear':lambda M,yy,xx,Y,sk,sil,h,s,v: M['nearArm']&(yy>=Y(745)),
  'foreFar':lambda M,yy,xx,Y,sk,sil,h,s,v: M['farArm'],
  'weapon':lambda M,yy,xx,Y,sk,sil,h,s,v: M['weaponP']&~M['fist'],
- 'thighB':lambda M,yy,xx,Y,sk,sil,h,s,v: M['backLeg']&(yy<=Y(1325)),
- 'shinB':lambda M,yy,xx,Y,sk,sil,h,s,v: M['backLeg']&(yy>=Y(1300)),
+ 'legB':lambda M,yy,xx,Y,sk,sil,h,s,v: M['backLeg']&(yy<=Y(1466)),
  'footB':lambda M,yy,xx,Y,sk,sil,h,s,v: (yy>=Y(1462))&(xx<Y(508))&(xx>=Y(295)),
- 'thighF':lambda M,yy,xx,Y,sk,sil,h,s,v: M['frontLeg']&(yy<=Y(1325)),
- 'shinF':lambda M,yy,xx,Y,sk,sil,h,s,v: M['frontLeg']&(yy>=Y(1300)),
+ 'legF':lambda M,yy,xx,Y,sk,sil,h,s,v: M['frontLeg']&(yy<=Y(1450)),
  'footF':lambda M,yy,xx,Y,sk,sil,h,s,v: (yy>=Y(1446))&(xx>=Y(508))&(xx<Y(760))}
 R['joints']={'hip':(520,1100),'neck':(520,415),'shN':(330,500),'elN':(265,760),'haN':(345,1015),'shF':(690,650),'elF':(715,800),'haF':(830,690),'grip':(850,700),
  'hipB':(410,1150),'knB':(405,1312),'anB':(400,1470),'soleB':(415,1575),'hipF':(590,1150),'knF':(595,1312),'anF':(590,1452),'soleF':(620,1555),'belt':(560,880)}
-R['order']=['weapon','upperNear','shinB','thighB','footB','torso','shinF','thighF','footF','head','foreNear','foreFar']
+R['order']=['weapon','upperNear','legB','footB','torso','legF','footF','head','foreNear','foreFar']
 # ------------------------------------------------------------------ V.V.
 V=dict(colors=56,torsoLeft=330,torsoRight=745,torsoTop=545,torsoBot=1190,fillMax=70)
 V['poly']={
@@ -114,19 +113,18 @@ V['derive']={
  'head':lambda M,yy,xx,Y,sk,sil,h,s,v: M['head'],
  'hair':hairpix,
  'torso':lambda M,yy,xx,Y,sk,sil,h,s,v: M['torsoP']&~M['micP']&~hairpix(M,yy,xx,Y,sk,sil,h,s,v)&~(M['farArm']&(xx>Y(700))),
+ 'armN':lambda M,yy,xx,Y,sk,sil,h,s,v: M['nearArm'],
  'upperNear':lambda M,yy,xx,Y,sk,sil,h,s,v: M['nearArm']&(yy<=Y(1010)),
  'foreNear':lambda M,yy,xx,Y,sk,sil,h,s,v: M['nearArm']&(yy>=Y(985)),
  'foreFar':lambda M,yy,xx,Y,sk,sil,h,s,v: M['farArm'],
  'weapon':lambda M,yy,xx,Y,sk,sil,h,s,v: M['micP']&~sk&~(M['farArm']&sk),
- 'thighB':lambda M,yy,xx,Y,sk,sil,h,s,v: M['backLeg']&(yy<=Y(1500)),
- 'shinB':lambda M,yy,xx,Y,sk,sil,h,s,v: M['backLeg']&(yy>=Y(1470)),
+ 'legB':lambda M,yy,xx,Y,sk,sil,h,s,v: M['backLeg']&(yy<=Y(1850)),
  'footB':lambda M,yy,xx,Y,sk,sil,h,s,v: (yy>=Y(1846))&(xx<Y(560)),
- 'thighF':lambda M,yy,xx,Y,sk,sil,h,s,v: M['frontLeg']&(yy<=Y(1500)),
- 'shinF':lambda M,yy,xx,Y,sk,sil,h,s,v: M['frontLeg']&(yy>=Y(1470)),
+ 'legF':lambda M,yy,xx,Y,sk,sil,h,s,v: M['frontLeg']&(yy<=Y(1850)),
  'footF':lambda M,yy,xx,Y,sk,sil,h,s,v: (yy>=Y(1846))&(xx>=Y(560))}
 V['joints']={'hip':(540,1110),'neck':(520,540),'hairP':(400,540),'shN':(385,620),'elN':(370,1000),'haN':(360,1330),'shF':(640,720),'elF':(700,900),'haF':(845,640),'grip':(835,640),
  'hipB':(440,1190),'knB':(430,1500),'anB':(425,1842),'soleB':(450,2052),'hipF':(640,1190),'knF':(665,1500),'anF':(625,1840),'soleF':(690,2042),'belt':(560,1060)}
-V['order']=['hair','upperNear','shinB','thighB','footB','torso','shinF','thighF','footF','head','foreNear','foreFar','weapon']
+V['order']=['hair','upperNear','legB','footB','torso','legF','footF','head','foreNear','foreFar','weapon']
 
 def inrect(xx,yy,x0,y0,x1,y1): return (xx>=x0*Q)&(xx<x1*Q)&(yy>=y0*Q)&(yy<y1*Q)
 def inpoly(pts,shape):
@@ -144,11 +142,11 @@ def classify_ricky(nm,arr,rgb,h,s,v,xx,yy):
         c[a&inrect(xx,yy,460,395,590,445)&sk&~fleece]=1
         c[a&inpoly([(480,520),(630,520),(630,850),(480,850)],arr.shape)&dark]=4
         c[a&(yy>=880*Q)&(h>190)&(h<290)&(v>.15)]=5
-    elif nm in('upperNear','foreNear','foreFar'):
+    elif nm in('upperNear','foreNear','foreFar','armN'):
         c[a&coat]=2; c[a&fleece]=3
-        hand=(yy>=985*Q) if nm=='foreNear' else inpoly([(768,612),(902,612),(902,742),(858,778),(795,762),(768,700)],arr.shape)
+        hand=(yy>=985*Q) if nm in('foreNear','armN') else inpoly([(768,612),(902,612),(902,742),(858,778),(795,762),(768,700)],arr.shape)
         c[a&hand&sk&~fleece]=1
-    elif nm.startswith(('thigh','shin')): c[a&(h>190)&(h<290)&(v>.15)]=5
+    elif nm.startswith('leg'): c[a&(h>190)&(h<290)&(v>.15)]=5
     elif nm.startswith('foot'): c[a&(h<40)&(s>.4)&(v>.3)]=6; c[a&(h>190)&(h<290)&(v>.15)]=5
     return c
 def classify_vv(nm,arr,rgb,h,s,v,xx,yy):
@@ -157,8 +155,8 @@ def classify_vv(nm,arr,rgb,h,s,v,xx,yy):
     if nm in('head','hair'): c[a&brown]=7; c[a&sk]=1
     elif nm=='torso':
         c[a&(s<.28)&(v>.25)&(v<.8)&(yy<1000*Q)]=2; c[a&sk]=1; c[a&(yy>=1000*Q)&(v<.4)]=5
-    elif nm in('upperNear','foreNear','foreFar'): c[a&sk]=1
-    elif nm.startswith(('thigh','shin')): c[a&(v<.45)]=5
+    elif nm in('upperNear','foreNear','foreFar','armN'): c[a&sk]=1
+    elif nm.startswith('leg'): c[a&(v<.45)]=5
     return c
 R['classify']=classify_ricky; V['classify']=classify_vv
 art={'ricky':build('ricky',R),'vv':build('vv',V)}

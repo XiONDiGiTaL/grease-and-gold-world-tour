@@ -140,7 +140,7 @@ ATK.flag = {
   special: () => spinFrames(6, (i, a) => P({ hip: [0, 22], lean: 4, fF: [13, 0], fB: [-13, 0], hF: [8, 44], hB: [4, 40], wang: a }))
 };
 ATK.salami = {
-  a1: () => [P({ hip: [-2, 25], lean: -6, hF: [2, 40], wang: 115, ...LEG, fF: [8, 0] }), P({ hip: [3, 24], lean: 12, hF: [22, 34], wang: 15, ...LEG, head: 6 }), P({ hip: [3, 24], lean: 13, hF: [24, 33], wang: 0, ...LEG, head: 6 }), P({ hip: [1, 25], lean: 6, hF: [14, 36], wang: 40, ...LEG })],
+  a1: () => [P({ hip: [-2, 25], lean: -6, hF: [2, 40], wang: 115, ...LEG, fF: [8, 0] }), P({ hip: [3, 24], lean: 12, hF: [19, 34], wang: 15, ...LEG, head: 6 }), P({ hip: [3, 24], lean: 13, hF: [20, 33], wang: 8, ...LEG, head: 6 }), P({ hip: [1, 25], lean: 6, hF: [14, 36], wang: 40, ...LEG })],
   a2: () => [P({ hip: [-3, 25], lean: -10, hF: [-3, 42], wang: 150, ...LEG, fF: [8, 0] }), P({ hip: [1, 25], lean: 8, hF: [14, 42], wang: 70, ...LEG }), P({ hip: [4, 24], lean: 16, hF: [22, 28], wang: -12, ...LEG, head: 8 }), P({ hip: [2, 25], lean: 6, hF: [14, 36], wang: 40, ...LEG })],
   a3: () => SLAM(10),
   jatk: () => ATK.flag.jatk(), jdown: () => ATK.flag.jdown(),
@@ -339,6 +339,7 @@ function figure(k, pose) {
 
 /* ---------- kit rendering ---------- */
 function renderKit(id, isPlayer) {
+  if (K[id].sheet && G.Sprites.renderSheetKit) return G.Sprites.renderSheetKit(id, isPlayer);
   if (K[id].art && G.Sprites.renderRigKit) return G.Sprites.renderRigKit(id, isPlayer);
   const k = K[id], poses = buildPoses(k, isPlayer), frames = {}, rigs = {};
   for (const a in poses) { frames[a] = []; rigs[a] = []; poses[a].forEach(p => { const r = figure(k, p); frames[a].push(r.buf); rigs[a].push(r.rig); }); }
