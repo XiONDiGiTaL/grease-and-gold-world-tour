@@ -308,15 +308,33 @@ R.menuList = function (g, ctx, rows, labels, x, y, gap, w) {
   });
 };
 R.title = function (g, ctx) {
-  R.backdrop(g, ctx, 0, .45);
-  R.heroLine(g, ctx, 230);
-  R.bigTitle(ctx, LW / 2, 50, 21);
-  ctx.fillStyle = MAG; ctx.fillRect(LW / 2 - 110, 80, 220, 18);
-  ctx.fillStyle = INK; ctx.fillRect(LW / 2 - 110, 80, 220, 2); ctx.fillRect(LW / 2 - 110, 96, 220, 2);
-  T(ctx, 'WORLD TOUR', LW / 2, 84, 14, CREAM, 'center');
-  if ((g.t >> 5) & 1) T(ctx, tr(g, 'press_start'), LW / 2, 120, 7, CREAM, 'center', INK);
+  R.backdrop(g, ctx, 0, .26);
+  /* warm pool of light on the pavement so the lineup is standing somewhere */
+  const grd = ctx.createLinearGradient(0, 140, 0, LH);
+  grd.addColorStop(0, 'rgba(242,182,48,0)');
+  grd.addColorStop(1, 'rgba(242,182,48,.16)');
+  ctx.fillStyle = grd; ctx.fillRect(0, 140, LW, LH - 140);
+  ctx.fillStyle = 'rgba(6,3,10,.72)'; ctx.fillRect(0, 0, LW, 6); ctx.fillRect(0, LH - 5, LW, 5);
+
+  /* heroes at poster scale, overlapping, centre figure flipped inward */
+  const cast = [['ricky', LW / 2 - 84, 1], ['vv', LW / 2 + 2, -1], ['johnny', LW / 2 + 90, 1]];
+  cast.forEach((c, i) => {
+    shadow(ctx, c[1], 240, 56, .46);
+    drawSprite(ctx, c[0], 'idle', Math.floor(g.t / 16 + i * 1.4) % 4, c[1], 240, c[2], 1.52);
+  });
+
+  /* marquee */
+  ctx.fillStyle = 'rgba(11,5,18,.82)'; ctx.fillRect(0, 6, LW, 94);
+  ctx.fillStyle = 'rgba(217,58,160,.35)'; ctx.fillRect(0, 6, LW, 1); ctx.fillRect(0, 99, LW, 1);
+  T(ctx, 'GREASE & GOLD RECORDS PRESENTS', LW / 2, 10, 7, MAG, 'center');
+  R.bigTitle(ctx, LW / 2, 18, 28);
+  ctx.fillStyle = MAG; ctx.fillRect(LW / 2 - 134, 58, 268, 21);
+  ctx.fillStyle = INK; ctx.fillRect(LW / 2 - 134, 58, 268, 2); ctx.fillRect(LW / 2 - 134, 77, 268, 2);
+  T(ctx, 'WORLD TOUR', LW / 2, 61, 14, CREAM, 'center');
+
+  if ((g.t >> 5) & 1) T(ctx, tr(g, 'press_start'), LW / 2, 92, 7, INK, 'center', CREAM);
+  T(ctx, 'BEST ' + String(g.best || 0).padStart(7, '0'), LW / 2, 246, 7, GOLD2, 'center', INK);
   T(ctx, tr(g, 'insert_coin'), LW / 2, 258, 7, DIM, 'center');
-  T(ctx, 'BEST ' + String(g.best || 0).padStart(7, '0'), LW / 2, 246, 7, GOLD2, 'center');
   g.hot.push({ x: 0, y: 0, w: LW, h: LH, act: 'confirm' });
 };
 R.main = function (g, ctx) {

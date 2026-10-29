@@ -96,6 +96,17 @@ function sphere(tris, c, r, pal, squash) {
   }
 }
 function quad(tris, a, b, c, d, pal) { emit(tris, a, b, c, pal); emit(tris, a, c, d, pal); }
+/* axis-aligned box with real half-extents on every axis (the frustum helper
+   only has vertical extent from its endpoints, which flattened face details) */
+function box(tris, c, hx, hy, hz, pal) {
+  const v = [
+    v3(c.x - hx, c.y - hy, c.z - hz), v3(c.x + hx, c.y - hy, c.z - hz),
+    v3(c.x + hx, c.y + hy, c.z - hz), v3(c.x - hx, c.y + hy, c.z - hz),
+    v3(c.x - hx, c.y - hy, c.z + hz), v3(c.x + hx, c.y - hy, c.z + hz),
+    v3(c.x + hx, c.y + hy, c.z + hz), v3(c.x - hx, c.y + hy, c.z + hz)
+  ];
+  [[0,1,2,3],[5,4,7,6],[4,0,3,7],[1,5,6,2],[3,2,6,7],[4,5,1,0]].forEach(f => quad(tris, v[f[0]], v[f[1]], v[f[2]], v[f[3]], pal));
+}
 
 /* ---------------- skeleton ---------------- */
 function skeleton(kit, P) {
@@ -214,21 +225,23 @@ function buildBody(tris, kit, J, P) {
   sphere(tris, add(J.head, v3(J.headR * .82, -.5 * s, J.headR * .95)), 1.4 * s, skin, 1.2);
   /* sunglasses: dark lens bar with a gold top rail */
   if (kit.face === 'mustache' || kit.face === 'beard' || kit.face === 'lips' || kit.face === 'glasses' || kit.face === 'plain' || kit.face === 'jowls' || kit.face === 'stubble') {
-    const eyeY = J.head.y + J.headR * .22, fz = J.headR * 1.0;
-    frustum(tris, add(v3(0, eyeY, fz), v3(-J.headR * .84, 0, 0)), add(v3(0, eyeY, fz), v3(J.headR * .84, 0, 0)), .55 * s, 1.1 * s, .55 * s, 1.1 * s, { base: 0xFF181820, hi: 0xFF2a2a34, sh: 0xFF0d0d12 });
-    frustum(tris, add(v3(0, eyeY + J.headR * .30, fz), v3(-J.headR * .86, 0, 0)), add(v3(0, eyeY + J.headR * .30, fz), v3(J.headR * .86, 0, 0)), .22 * s, 1.2 * s, .22 * s, 1.2 * s, pal.gold || { base: 0xFF40b0d8, hi: 0xFFe0f0ff, sh: 0xFF207090 });
-    /* bridge + temple bars read at 1x */
-    frustum(tris, add(v3(0, eyeY, fz), v3(-J.headR * .16, 0, 0)), add(v3(0, eyeY, fz), v3(J.headR * .16, 0, 0)), .12 * s, 1.3 * s, .12 * s, 1.3 * s, pal.gold || { base: 0xFF40b0d8, hi: 0xFFe0f0ff, sh: 0xFF207090 });
+    const eyeY = J.head.y + J.headR * .22, fz = J.headR * 1.02;
+    const gold = pal.gold || { base: 0xFF40b0d8, hi: 0xFFe0f0ff, sh: 0xFF207090 };
+    /* one wide dark lens block with a gold rail above it */
+    box(tris, v3(J.head.x + J.headR * .18, eyeY, fz), J.headR * .86, J.headR * .21, .9 * s, { base: 0xFF181820, hi: 0xFF2a2a34, sh: 0xFF0d0d12 });
+    box(tris, v3(J.head.x + J.headR * .18, eyeY + J.headR * .28, fz), J.headR * .88, J.headR * .07, 1.0 * s, gold);
+    box(tris, v3(J.head.x + J.headR * .18, eyeY, fz + .5 * s), J.headR * .12, J.headR * .05, 1.1 * s, gold);
   }
   if (kit.face === 'mustache') {
-    /* a proper handlebar: two wings lifted off the lip */
-    frustum(tris, add(J.head, v3(J.headR * .40, -J.headR * .24, J.headR * .98)), add(J.head, v3(J.headR * .95, -J.headR * .34, J.headR * .72)), 1.0 * s, .8 * s, .55 * s, .6 * s, pal.hair);
-    frustum(tris, add(J.head, v3(J.headR * .40, -J.headR * .24, J.headR * .98)), add(J.head, v3(J.headR * .40, -J.headR * .58, J.headR * .86)), .9 * s, .8 * s, .5 * s, .6 * s, pal.hair);
+    /* handlebar: a thick bar with the tips kicked up */
+    box(tris, add(J.head, v3(J.headR * .52, -J.headR * .26, J.headR * .98)), J.headR * .46, J.headR * .10, .8 * s, pal.hair);
+    box(tris, add(J.head, v3(J.headR * .14, -J.headR * .38, J.headR * .92)), J.headR * .12, J.headR * .10, .7 * s, pal.hair);
+    box(tris, add(J.head, v3(J.headR * .92, -J.headR * .36, J.headR * .80)), J.headR * .12, J.headR * .11, .7 * s, pal.hair);
   } else if (kit.face === 'beard') {
-    sphere(tris, add(J.head, v3(J.headR * .22, -J.headR * .62, J.headR * .62)), J.headR * .78, pal.beard, .62);
-    frustum(tris, add(J.head, v3(J.headR * .22, -J.headR * .42, J.headR * .92)), add(J.head, v3(J.headR * .58, -J.headR * .46, J.headR * .80)), .5 * s, .5 * s, .3 * s, .4 * s, pal.hair);
+    sphere(tris, add(J.head, v3(J.headR * .22, -J.headR * .62, J.headR * .72)), J.headR * .78, pal.beard, .62);
+    box(tris, add(J.head, v3(J.headR * .34, -J.headR * .34, J.headR * .95)), J.headR * .34, J.headR * .09, .7 * s, pal.hair);
   } else if (kit.face === 'lips') {
-    frustum(tris, add(J.head, v3(J.headR * .35, -J.headR * .38, J.headR * .98)), add(J.head, v3(J.headR * .88, -J.headR * .40, J.headR * .80)), .5 * s, .4 * s, .3 * s, .35 * s, pal.lip);
+    box(tris, add(J.head, v3(J.headR * .58, -J.headR * .38, J.headR * .98)), J.headR * .23, J.headR * .09, .6 * s, pal.lip);
   } else if (kit.face === 'jowls') {
     sphere(tris, add(J.head, v3(J.headR * .18, -J.headR * .38, J.headR * .95)), J.headR * .62, skin, .6);
   } else if (kit.face === 'bandana') {
