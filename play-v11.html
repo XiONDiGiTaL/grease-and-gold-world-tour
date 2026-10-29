@@ -36,7 +36,7 @@ body{display:flex;align-items:center;justify-content:center;padding:env(safe-are
   <div class="btn" id="bG" data-btn="grab">GRB</div>
   <div class="btn" id="bP" data-btn="pause">II</div>
 </div>
-<script>window.GG_ASSET_HASH="07c60ad67609";</script>
+<script>window.GG_ASSET_HASH="5a5dc87daab4";</script>
 <script>
 
 /* ---- core.js ---- */
@@ -1739,16 +1739,19 @@ A.unlock = function () {
   const d = A.noise.getChannelData(0);
   for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   A.enabled = true;
+  if (A._wanted) A.music(A._wanted);
   A._next = A.ctx.currentTime + .1;
 };
 A.applySettings = function (s) {
   A.musicVol = s.music; A.sfxVol = s.sfx;
   if (A.musicBus) A.musicBus.gain.value = A.musicVol * .34 * (A.ducked ? .25 : 1);
   if (A.sfxBus) A.sfxBus.gain.value = A.sfxVol;
+  if (A.el) A.el.volume = trackVol();
 };
 A.duck = function (on) {
   A.ducked = on;
   if (A.musicBus) A.musicBus.gain.value = A.musicVol * .34 * (on ? .2 : 1);
+  if (A.el) A.el.volume = trackVol();
 };
 function tone(freq, dur, type, gain, slide, when) {
   if (!A.enabled) return;
@@ -1795,8 +1798,52 @@ A.sfx = function (name) {
     case 'throw': noise(.14, .18, 1600); tone(420, .1, 'square', .1, -220); break;
   }
 };
-/* ---------------- music ---------------- */
-const SCALE = [0, 3, 5, 7, 10];      /* minor pentatonic */
+/* ---------------- music ----------------
+   Real soundtrack, streamed from assets/music: the two tracks that ship with
+   the project (arcade_tune, i_dont_kneel). The browser fetches them lazily, so
+   the bundle stays small and a missing track only costs silence, not a boot
+   failure. The chiptune sequencer below is the fallback when a file cannot be
+   loaded or autoplay stays blocked. */
+const TRACKS = {
+  title: 'arcade_tune', arcade: 'arcade_tune', kneel: 'i_dont_kneel',
+  training: 'arcade_tune', victory: 'i_dont_kneel'
+};
+const MUSIC_DIR = 'assets/music/';
+A.el = null; A.tracks = {}; A._wanted = null; A._fallback = false;
+function trackVol() { return Math.max(0, Math.min(1, A.musicVol)) * (A.ducked ? .22 : 1) * .9; }
+function audioEl(file) {
+  let el = A.tracks[file];
+  if (el) return el;
+  if (typeof Audio === 'undefined') return null;
+  el = new Audio();
+  el.src = MUSIC_DIR + file + '.mp3';
+  el.loop = true; el.preload = 'auto'; el.volume = trackVol();
+  el.addEventListener('error', () => { A._fallback = true; startChiptune(A._wanted); });
+  A.tracks[file] = el;
+  return el;
+}
+A.music = function (name) {
+  name = TRACKS[name] ? name : 'arcade';
+  A._wanted = name;
+  const el = audioEl(TRACKS[name]);
+  if (!el) { startChiptune(name); return; }
+  if (A.el === el && !el.paused) { el.volume = trackVol(); return; }
+  if (A.el && A.el !== el) { try { A.el.pause(); A.el.currentTime = 0; } catch (e) {} }
+  A._fallback = false;
+  stopChiptune();
+  A.el = el;
+  el.volume = trackVol();
+  const p = el.play();
+  if (p && p.catch) p.catch(() => { /* autoplay blocked until unlock() */ });
+};
+A.stop = function () {
+  A._wanted = null;
+  if (A.el) { try { A.el.pause(); } catch (e) {} }
+  stopChiptune();
+};
+A.tick = function () { if (A._fallback) chiptuneTick(); };
+
+/* ---- chiptune fallback ---- */
 const PATTERNS = {
   title: { bpm: 96, root: 45, lead: [0, 3, 5, 7, 5, 3, 0, -2, 0, 5, 7, 10, 7, 5, 3, 0], bass: [0, 0, 5, 5, 3, 3, 7, 7], hat: 1 },
   arcade: { bpm: 132, root: 40, lead: [0, 7, 5, 3, 0, 10, 7, 5, 3, 5, 7, 10, 12, 10, 7, 5], bass: [0, 0, 3, 3, 5, 5, 7, 7], hat: 1 },
@@ -1804,15 +1851,15 @@ const PATTERNS = {
   training: { bpm: 100, root: 43, lead: [0, 3, 5, 3, 7, 5, 3, 0, 5, 7, 10, 7, 5, 3, 0, 0], bass: [0, 0, 5, 5, 3, 3, 7, 7], hat: 0 }
 };
 function midi(n) { return 440 * Math.pow(2, (n - 69) / 12); }
-A.music = function (name) {
+let chiptuneName = null;
+function startChiptune(name) {
   if (!PATTERNS[name]) name = 'arcade';
-  if (A.current === name) return;
-  A.current = name; A._step = 0; A._next = A.ctx ? A.ctx.currentTime + .06 : 0;
-};
-A.stop = function () { A.current = null; };
-A.tick = function () {
-  if (!A.enabled || !A.current) return;
-  const pat = PATTERNS[A.current];
+  chiptuneName = name; A._step = 0; A._next = A.ctx ? A.ctx.currentTime + .06 : 0;
+}
+function stopChiptune() { chiptuneName = null; }
+function chiptuneTick() {
+  if (!A.enabled || !chiptuneName) return;
+  const pat = PATTERNS[chiptuneName];
   const spb = 60 / pat.bpm / 2;      /* eighth notes */
   const now = A.ctx.currentTime;
   if (A._next < now - .5) A._next = now + .02;
@@ -1842,7 +1889,7 @@ A.tick = function () {
     }
     A._next += spb; A._step++;
   }
-};
+}
 })(globalThis.GG = globalThis.GG || {});
 
 

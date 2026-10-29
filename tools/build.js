@@ -36,6 +36,10 @@ const art = path.join(root, 'assets', 'gg');
 if (!fs.existsSync(art)) { console.error('assets/gg missing - run npm run art first'); process.exit(1); }
 fs.cpSync(art, path.join(dist, 'assets', 'gg'), { recursive: true });
 
+/* soundtrack is streamed, not embedded, so it is copied next to the build */
+const musicDir = path.join(root, 'assets', 'music');
+if (fs.existsSync(musicDir)) fs.cpSync(musicDir, path.join(dist, 'assets', 'music'), { recursive: true });
+
 /* GitHub Pages serves the repository root, so the root index.html is the game.
    The original marketing page is preserved as landing.html. */
 fs.writeFileSync(path.join(root, 'index.html'), html);

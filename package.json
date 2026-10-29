@@ -4,7 +4,7 @@
   "description": "Grease & Gold: World Tour - a browser arcade beat 'em up",
   "private": true,
   "scripts": {
-    "art": "node tools/gg_art.js --sheet --3d",
+    "art": "node tools/gg_import.js",
     "art:2d": "node tools/gg_art.js --sheet",
     "art:3d": "node tools/gg_art.js --sheet --3d",
     "build": "node tools/build.js",
