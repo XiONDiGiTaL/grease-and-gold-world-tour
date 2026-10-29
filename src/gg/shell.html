@@ -18,10 +18,11 @@ body{display:flex;align-items:center;justify-content:center;padding:env(safe-are
 #dpad::after{top:50%;left:16%;height:6px;width:68%;transform:translateY(-50%)}
 .btn{position:absolute;width:66px;height:66px;border-radius:50%;background:rgba(20,9,28,.5);border:3px solid rgba(242,182,48,.7);color:var(--cream);font:900 13px "Arial Black",Impact,sans-serif;display:flex;align-items:center;justify-content:center;letter-spacing:.5px}
 .btn.down{background:rgba(242,182,48,.5);color:var(--ink)}
-#bA{right:calc(104px + env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));width:78px;height:78px}
-#bJ{right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(54px + env(safe-area-inset-bottom,0px))}
-#bS{right:calc(66px + env(safe-area-inset-right,0px));bottom:calc(112px + env(safe-area-inset-bottom,0px));border-color:var(--mag)}
-#bG{right:calc(150px + env(safe-area-inset-right,0px));bottom:calc(100px + env(safe-area-inset-bottom,0px));width:54px;height:54px;font-size:12px}
+#bA{right:calc(112px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));width:78px;height:78px}
+#bH{right:calc(24px + env(safe-area-inset-right,0px));bottom:calc(44px + env(safe-area-inset-bottom,0px));width:62px;height:62px;border-color:var(--mag)}
+#bJ{right:calc(104px + env(safe-area-inset-right,0px));bottom:calc(104px + env(safe-area-inset-bottom,0px));width:56px;height:56px;font-size:12px}
+#bG{right:calc(172px + env(safe-area-inset-right,0px));bottom:calc(88px + env(safe-area-inset-bottom,0px));width:52px;height:52px;font-size:12px}
+#bS{right:calc(24px + env(safe-area-inset-right,0px));bottom:calc(120px + env(safe-area-inset-bottom,0px));width:52px;height:52px;font-size:12px}
 #bP{right:calc(10px + env(safe-area-inset-right,0px));top:calc(8px + env(safe-area-inset-top,0px));width:38px;height:38px;font-size:14px;border-width:2px}
 .note{position:fixed;left:0;right:0;bottom:4px;text-align:center;color:#5b4a72;font:11px/1.4 monospace;pointer-events:none}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -31,9 +32,10 @@ body{display:flex;align-items:center;justify-content:center;padding:env(safe-are
 <div id="touch">
   <div id="dpad"></div>
   <div class="btn" id="bA" data-btn="attack">ATK</div>
+  <div class="btn" id="bH" data-btn="heavy">HVY</div>
   <div class="btn" id="bJ" data-btn="jump">JMP</div>
-  <div class="btn" id="bS" data-btn="special">SPC</div>
   <div class="btn" id="bG" data-btn="grab">GRB</div>
+  <div class="btn" id="bS" data-btn="special">SPC</div>
   <div class="btn" id="bP" data-btn="pause">II</div>
 </div>
 <!--SCRIPTS-->

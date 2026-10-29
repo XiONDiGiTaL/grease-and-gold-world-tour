@@ -256,7 +256,9 @@ R.hud = function (g, ctx) {
 R.trainingPanel = function (g, ctx) {
   panel(ctx, LW - 106, 56, 100, 82, MAG, 'rgba(20,10,28,.85)');
   T(ctx, g.tr('train_title'), LW - 56, 64, 7, GOLD, 'center');
-  const rows = [['MOVE', 'ARROWS'], ['COMBO', 'ATTACK X3'], ['LAUNCH', 'ATTACK X3'], ['SPECIAL', 'HOLD SPECIAL'], ['GRAB', 'GRAB'], ['THROW', 'GRAB TWICE'], ['DUMMY', 'UP+GRAB']];
+  const K = (a) => String(G.KEYLABEL(g.settings.keys.p1 && g.settings.keys.p1[a])).slice(0, 7);
+  const rows = [['MOVE', 'ARROWS'], ['COMBO', K('attack') + ' X3'], ['HEAVY', K('heavy')],
+    ['SPECIAL', 'HOLD ' + K('special')], ['GRAB', K('grab')], ['THROW', K('grab') + ' X2'], ['DUMMY', 'UP+' + K('grab')]];
   rows.forEach((r, i) => { T(ctx, r[0], LW - 100, 76 + i * 8, 7, CREAM); T(ctx, r[1], LW - 12, 76 + i * 8, 7, DIM, 'right'); });
 };
 
@@ -358,7 +360,7 @@ R.main = function (g, ctx) {
     T(ctx, 'BEAT EM UP', 358, 152, 7, DIM, 'center');
     T(ctx, 'V' + G.VERSION, 358, 200, 7, DIM, 'center');
   }
-  T(ctx, 'ARROWS / WASD  SELECT      ENTER  CONFIRM', LW / 2, 258, 7, DIM, 'center');
+  T(ctx, 'Z  SELECT      X  BACK      A  PAD', LW / 2, 258, 7, DIM, 'center');
 };
 R.select = function (g, ctx) {
   R.backdrop(g, ctx, g.settings.stage | 0, .62);
@@ -439,46 +441,152 @@ R.settings = function (g, ctx) {
     if (k === 'set_flash') return tr(g, s.flash ? 'on' : 'off');
     if (k === 'set_scan') return tr(g, s.scanlines ? 'on' : 'off');
     if (k === 'set_lang') return s.lang.toUpperCase();
+    if (k === 'set_rumble') return tr(g, s.rumble ? 'on' : 'off');
     if (k === 'set_keys') return '>';
     return '';
   };
   if (!g.cfg) {
-    const rows = ['set_music', 'set_sfx', 'set_shake', 'set_flash', 'set_scan', 'set_lang', 'set_keys', 'set_back'];
+    const rows = G.SETTINGS_ROWS;
     rows.forEach((k, i) => {
-      const y = 56 + i * 22, sel = g.menu === i;
-      if (sel) { ctx.fillStyle = GOLD; ctx.fillRect(64, y - 5, 352, 20); }
+      const y = 54 + i * 17, sel = g.menu === i;
+      if (sel) { ctx.fillStyle = GOLD; ctx.fillRect(64, y - 5, 352, 16); }
       T(ctx, tr(g, k), 72, y, 7, sel ? INK : CREAM);
       T(ctx, val(k), 404, y, 7, sel ? INK : GOLD2, 'right');
-      g.hot.push({ x: 64, y: y - 5, w: 352, h: 20, act: 'row', i: i });
+      g.hot.push({ x: 64, y: y - 5, w: 352, h: 16, act: 'row', i: i });
     });
-    T(ctx, 'LEFT / RIGHT TO CHANGE', LW / 2, 238, 7, DIM, 'center');
-  } else R.remap(g, ctx);
+    T(ctx, 'LEFT / RIGHT TO CHANGE', LW / 2, 232, 7, DIM, 'center');
+  } else R.controls(g, ctx);
 };
-R.remap = function (g, ctx) {
-  const c = g.cfg, keys = g.settings.keys[c.player ? 'p2' : 'p1'];
-  T(ctx, c.player ? tr(g, 'keys_p2') : tr(g, 'keys_p1'), LW / 2, 54, 7, c.player ? BLUE : GOLD2, 'center');
-  ACT_ROWS.forEach((a, i) => {
-    const y = 68 + i * 14, sel = c.row === i;
-    if (sel) { ctx.fillStyle = '#2a1d3a'; ctx.fillRect(120, y - 4, 240, 13); }
-    T(ctx, tr(g, 'act_' + a), 130, y, 7, sel ? GOLD2 : CREAM);
-    const label = c.waiting && sel ? tr(g, 'keys_press') : G.KEYLABEL(keys[a]);
-    T(ctx, label, 350, y, 7, c.waiting && sel ? MAG : CREAM, 'right');
+
+/* ---------------- controls (keyboard diagram + controller diagram) ---------------- */
+var ACT_ROWS = G.ACT;
+var SHORT = { left: '<', right: '>', up: '^', down: 'v', attack: 'ATK', heavy: 'HVY', jump: 'JMP',
+  grab: 'GRB', special: 'SPC', start: 'STA', pause: 'PSE' };
+function keycap(ctx, x, y, w, h, label, opts) {
+  opts = opts || {};
+  ctx.fillStyle = opts.active ? GOLD : (opts.fill || '#241733');
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = opts.active ? '#2a1d3a' : (opts.edge || '#6a4a8a');
+  ctx.fillRect(x, y, w, 1); ctx.fillRect(x, y + h - 1, w, 1);
+  ctx.fillRect(x, y, 1, h); ctx.fillRect(x + w - 1, y, 1, h);
+  if (label) T(ctx, label, x + Math.round(w / 2), y + Math.round((h - 7) / 2), 7,
+    opts.active ? INK : (opts.col || CREAM), 'center');
+}
+function padLabelOf(g, a) {
+  const m = g.settings.pad || {};
+  return m[a] === undefined ? '--' : G.Input.padName(m[a]);
+}
+R.controls = function (g, ctx) {
+  const c = g.cfg, padTab = c.tab === 'pad';
+  const keys = g.settings.keys[c.player ? 'p2' : 'p1'];
+  panel(ctx, 10, 10, 460, 250, GOLD, 'rgba(16,9,24,.97)');
+  T(ctx, tr(g, 'keys_title'), LW / 2, 18, 14, GOLD, 'center');
+  /* tabs */
+  [['ctl_tab_keys', 'keys'], ['ctl_tab_pad', 'pad']].forEach((tb, i) => {
+    const w = 96, h = 14, x = LW / 2 - 100 + i * 104, y = 34;
+    keycap(ctx, x, y, w, h, tr(g, tb[0]), { active: tb[1] === c.tab });
+    g.hot.push({ x: x, y: y, w: w, h: h, act: 'tab', s: tb[1] });
   });
-  T(ctx, 'UP/DOWN  SELECT    ENTER  REBIND    LEFT/RIGHT  PLAYER', LW / 2, 222, 7, DIM, 'center');
-  T(ctx, tr(g, 'keys_reset') + ': ' + (c.resetHint ? 'OK' : 'HOLD BACKSPACE'), LW / 2, 234, 7, DIM, 'center');
+  /* action rows + reset */
+  const top = 56;
+  ACT_ROWS.concat(['reset']).forEach((a, i) => {
+    const y = top + i * 12, sel = c.row === i, isReset = a === 'reset';
+    if (sel) { ctx.fillStyle = padTab ? '#33285a' : '#2a1d3a'; ctx.fillRect(18, y - 2, 200, 12); }
+    T(ctx, (sel ? '> ' : '  ') + (isReset ? tr(g, 'keys_reset') : tr(g, 'act_' + a)), 22, y, 7,
+      isReset ? MAG : sel ? GOLD2 : CREAM);
+    if (!isReset) {
+      const listening = (c.waiting || c.padWaiting) && sel;
+      const label = listening ? tr(g, 'keys_press') : padTab ? padLabelOf(g, a) : G.KEYLABEL(keys[a]);
+      T(ctx, label, 214, y, 7, listening ? MAG : sel ? CREAM : DIM, 'right');
+    }
+    g.hot.push({ x: 18, y: y - 2, w: 200, h: 12, act: 'ctlrow', i: i });
+  });
+  if (padTab) R.padDiagram(g, ctx, 228, 50); else R.keyDiagram(g, ctx, 228, 50, keys);
+  T(ctx, padTab ? tr(g, 'ctl_hint_pad') : tr(g, 'ctl_hint_keys'), LW / 2, 244, 7, DIM, 'center');
 };
-var ACT_ROWS = ['left', 'right', 'up', 'down', 'attack', 'jump', 'special', 'grab', 'start', 'pause'];
+R.keyDiagram = function (g, ctx, ox, oy, keys) {
+  const cap = (a, x, y, w) => {
+    keycap(ctx, x, y, w, 14, String(G.KEYLABEL(keys[a])).slice(0, 5));
+    T(ctx, SHORT[a] || '?', x + w / 2, y + 16, 7, DIM, 'center');
+    g.hot.push({ x: x, y: y, w: w, h: 14, act: 'keycap', a: a });
+  };
+  T(ctx, tr(g, 'ctl_lh'), ox + 4, oy, 7, MAG);
+  T(ctx, tr(g, 'ctl_rh'), ox + 112, oy, 7, MAG);
+  /* left hand: arrows in an inverted T */
+  cap('up', ox + 34, oy + 10, 30);
+  cap('left', ox + 4, oy + 38, 30);
+  cap('down', ox + 34, oy + 38, 30);
+  cap('right', ox + 64, oy + 38, 30);
+  /* right hand: light and heavy side by side, jump beside them, grab and
+     special on the row below - the emulator-pad grip */
+  cap('attack', ox + 112, oy + 10, 32);
+  cap('heavy', ox + 148, oy + 10, 32);
+  cap('jump', ox + 184, oy + 10, 40);
+  cap('grab', ox + 112, oy + 38, 32);
+  cap('special', ox + 148, oy + 38, 40);
+  T(ctx, tr(g, 'ctl_tap'), ox + 116, oy + 76, 7, DIM, 'center');
+};
+R.padDiagram = function (g, ctx, ox, oy) {
+  const W = 232, m = g.settings.pad || {};
+  /* traced silhouette: crown with two bumper humps, flanks and two grips */
+  ctx.strokeStyle = 'rgba(242,182,48,.4)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(ox + 26, oy + 20);
+  ctx.lineTo(ox + W - 26, oy + 20);
+  ctx.quadraticCurveTo(ox + W + 2, oy + 26, ox + W - 12, oy + 74);
+  ctx.quadraticCurveTo(ox + W - 24, oy + 112, ox + W - 50, oy + 106);
+  ctx.quadraticCurveTo(ox + W - 72, oy + 100, ox + W - 76, oy + 70);
+  ctx.quadraticCurveTo(ox + W / 2, oy + 44, ox + 76, oy + 70);
+  ctx.quadraticCurveTo(ox + 72, oy + 100, ox + 50, oy + 106);
+  ctx.quadraticCurveTo(ox + 24, oy + 112, ox + 12, oy + 74);
+  ctx.quadraticCurveTo(ox - 2, oy + 26, ox + 26, oy + 20);
+  ctx.closePath(); ctx.stroke();
+  const actOf = (i) => { for (const k in m) if (m[k] === i) return k; return null; };
+  /* every drawn button carries the action it fires; an unbound one keeps its
+     pad name so it can still be clicked and bound */
+  const draw = (i, x, y, w, h, glyph) => {
+    const a = actOf(i);
+    keycap(ctx, x, y, w, h, a ? (SHORT[a] || '?') : (glyph || G.Input.padName(i)),
+      { fill: a ? '#2a1d3a' : '#181022', col: a ? CREAM : DIM });
+    g.hot.push({ x: x, y: y, w: w, h: h, act: 'padcap', i: i });
+  };
+  draw(6, ox + 4, oy, 40, 11);            /* LT */
+  draw(4, ox + 4, oy + 15, 40, 11);       /* LB */
+  draw(7, ox + 188, oy, 40, 11);          /* RT */
+  draw(5, ox + 188, oy + 15, 40, 11);     /* RB */
+  draw(8, ox + 88, oy + 4, 32, 11);       /* BACK  */
+  draw(9, ox + 122, oy + 4, 32, 11);      /* START */
+  /* left stick + d-pad */
+  ctx.strokeStyle = 'rgba(242,182,48,.55)';
+  ctx.beginPath(); ctx.arc(ox + 44, oy + 62, 13, 0, 7); ctx.stroke();
+  T(ctx, tr(g, 'ctl_move'), ox + 44, oy + 59, 7, DIM, 'center');
+  draw(12, ox + 34, oy + 86, 18, 11, '^');
+  draw(13, ox + 34, oy + 110, 18, 11, 'v');
+  draw(14, ox + 14, oy + 98, 18, 11, '<');
+  draw(15, ox + 54, oy + 98, 18, 11, '>');
+  /* face diamond: Y heavy, X light, B grab, A jump */
+  draw(3, ox + 164, oy + 62, 24, 12);
+  draw(2, ox + 136, oy + 78, 24, 12);
+  draw(1, ox + 192, oy + 78, 24, 12);
+  draw(0, ox + 164, oy + 94, 24, 12);
+  T(ctx, G.Input.padConnected() ? tr(g, 'ctl_pad_ok') : tr(g, 'ctl_pad_none'), ox + 116, oy + 132, 7,
+    G.Input.padConnected() ? GREEN : DIM, 'center');
+  T(ctx, tr(g, 'ctl_pad_std'), ox + 116, oy + 144, 7, DIM, 'center');
+};
 R.howto = function (g, ctx) {
   R.backdrop(g, ctx, 0, .8);
   panel(ctx, 24, 16, 432, 238, GOLD, 'rgba(20,11,30,.95)');
   T(ctx, tr(g, 'howto_title'), LW / 2, 34, 14, GOLD, 'center');
-  const rows = [['howto_move', 'howto_move_d'], ['howto_atk', 'howto_atk_d'], ['howto_spec', 'howto_spec_d'], ['howto_jump', 'howto_jump_d'], ['howto_grab', 'howto_grab_d'], ['howto_food', 'howto_food_d'], ['howto_coop', 'howto_coop_d']];
+  const rows = [['howto_move', 'howto_move_d'], ['howto_atk', 'howto_atk_d'], ['howto_heavy', 'howto_heavy_d'],
+    ['howto_jump', 'howto_jump_d'], ['howto_grab', 'howto_grab_d'], ['howto_spec', 'howto_spec_d'],
+    ['howto_food', 'howto_food_d'], ['howto_coop', 'howto_coop_d']];
   rows.forEach((r, i) => {
-    const y = 52 + i * 24;
+    const y = 48 + i * 22;
     T(ctx, tr(g, r[0]), 36, y, 7, MAG);
     wrap(ctx, tr(g, r[1]), 36, y + 9, 400, 7, CREAM);
   });
-  T(ctx, 'ESC  ' + tr(g, 'set_back'), LW / 2, 242, 7, DIM, 'center');
+  T(ctx, 'Z / A / START  CONFIRM      X / B / ESC  BACK', LW / 2, 244, 7, DIM, 'center');
 };
 function wrap(ctx, str, x, y, w, size, col, align) {
   const words = String(str).split(' ');

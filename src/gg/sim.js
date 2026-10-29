@@ -71,9 +71,11 @@ const FOOD = G.FOOD = {
 const DROPS = ['adana', 'adana', 'shish', 'shish', 'lahmacun', 'kunefe', 'doner'];
 const DIFF = { 0: { hp: .85, dmg: .8, slots: 1, cool: 1.25 }, 1: { hp: 1, dmg: 1, slots: 2, cool: 1 }, 2: { hp: 1.2, dmg: 1.2, slots: 3, cool: .8 } };
 
-/* ---------------- input action names ---------------- */
-const ACT = ['left', 'right', 'up', 'down', 'attack', 'jump', 'special', 'grab', 'start', 'pause'];
-G.ACT = ACT;
+/* ---------------- input action names (G.ACT lives in core.js) ---------------- */
+const ACT = G.ACT;
+/* settings rows: index 7 opens CONTROLS, index 8 leaves */
+const SETTINGS_ROWS = ['set_music', 'set_sfx', 'set_shake', 'set_flash', 'set_scan', 'set_lang', 'set_rumble', 'set_keys', 'set_back'];
+G.SETTINGS_ROWS = SETTINGS_ROWS;
 
 class Game {
   constructor(opts) {
@@ -178,6 +180,10 @@ class Game {
   consume(a, p) { return G.Input.consume(p ? 'p2' : 'p1', a); }
   axisX(p) { return (this.held('right', p) ? 1 : 0) - (this.held('left', p) ? 1 : 0); }
   axisY(p) { return (this.held('down', p) ? 1 : 0) - (this.held('up', p) ? 1 : 0); }
+  /* menus follow one pair of buttons everywhere: LIGHT / JUMP / START confirm,
+     HEAVY / GRAB / PAUSE back out - Z and X on the keyboard, A and B on the pad */
+  confirm() { return this.just('start') || this.just('attack') || this.just('jump'); }
+  cancel() { return this.just('pause') || this.just('heavy') || this.just('grab'); }
 
   /* ---------------- update ---------------- */
   update() {
@@ -194,14 +200,16 @@ class Game {
     const I = G.Input;
     if (this.screen === 'join') { this.navJoin(); return; }
     if (this.screen === 'lobby') { this.navLobby(); return; }
-    if (I.just('p1', 'pause') || I.just('p1', 'back')) this.onBack();
-    if (this.screen === 'title') { if (I.just('p1', 'start') || I.just('p1', 'attack') || I.just('p1', 'jump')) this.goto('main'); }
+    if (this.screen === 'play') { if (I.just('p1', 'pause')) this.onBack(); return; }
+    /* the controls screen reads its own cancel so a rebind never closes it */
+    if (this.cancel() && !(this.screen === 'settings' && this.cfg)) { this.onBack(); return; }
+    if (this.screen === 'title') { if (this.confirm()) this.goto('main'); }
     else if (this.screen === 'main' || this.screen === 'modes' || this.screen === 'settings' || this.screen === 'credits' || this.screen === 'howto' || this.screen === 'online') this.navScreen();
     else if (this.screen === 'select') this.navSelect();
     else if (this.screen === 'pause') this.navPause();
-    else if (this.screen === 'clear') { if (I.just('p1', 'start') || I.just('p1', 'attack')) this.nextStage(); }
+    else if (this.screen === 'clear') { if (this.confirm()) this.nextStage(); }
     else if (this.screen === 'over') this.navOver();
-    else if (this.screen === 'victory') { if (I.just('p1', 'start') || I.just('p1', 'attack')) this.goto('title'); }
+    else if (this.screen === 'victory') { if (this.confirm()) this.goto('title'); }
   }
   updateLobbyInput() {
     if (this.screen === 'join') this.navJoin();
@@ -209,15 +217,16 @@ class Game {
   }
   navScreen() {
     const sc = this.screen;
+    if (this.cfg) { this.navRemap(); return; }
     const rows = sc === 'main' ? ['mode_solo', 'mode_local', 'mode_online', 'main_training', 'main_howto', 'main_settings', 'main_credits']
-      : sc === 'settings' ? ['set_music', 'set_sfx', 'set_shake', 'set_flash', 'set_scan', 'set_lang', 'set_keys', 'set_back']
+      : sc === 'settings' ? SETTINGS_ROWS
       : sc === 'online' ? ['online_host', 'online_join', 'online_local', 'mode_back']
       : sc === 'howto' ? ['mode_back'] : ['mode_back'];
     if (G.Input.just('p1', 'up')) { this.menu = (this.menu + rows.length - 1) % rows.length; this.blip(); }
     if (G.Input.just('p1', 'down')) { this.menu = (this.menu + 1) % rows.length; this.blip(); }
     const left = G.Input.just('p1', 'left'), right = G.Input.just('p1', 'right');
     if (sc === 'settings') this.adjust(this.menu, right ? 1 : left ? -1 : 0);
-    if (G.Input.just('p1', 'start') || G.Input.just('p1', 'attack')) {
+    if (this.confirm()) {
       if (sc === 'main') {
         if (this.menu === 0) { this.mode = 'solo'; this.goto('select'); }
         else if (this.menu === 1) { this.mode = 'local'; this.goto('select'); }
@@ -228,8 +237,8 @@ class Game {
         else this.goto('credits');
         this.blip(true);
       } else if (sc === 'settings') {
-        if (this.menu === 7) this.goto('main');
-        else if (this.menu === 6) this.cfg = { player: 0, row: 0, waiting: false };
+        if (this.menu === 8) this.goto('main');
+        else if (this.menu === 7) this.cfg = { player: 0, row: 0, tab: 'keys', waiting: false, padWaiting: false };
         else this.adjust(this.menu, 1);
       } else if (sc === 'online') {
         if (this.menu === 0) this.startHost();
@@ -238,7 +247,6 @@ class Game {
         else this.goto('main');
       } else this.goto('main');
     }
-    if (this.cfg) this.navRemap();
   }
   adjust(row, dir) {
     if (!dir) return;
@@ -249,26 +257,56 @@ class Game {
     else if (row === 3) s.flash = s.flash ? 0 : 1;
     else if (row === 4) s.scanlines = s.scanlines ? 0 : 1;
     else if (row === 5) { s.lang = s.lang === 'en' ? 'tr' : 'en'; }
-    if (row <= 5) { G.saveSettings(s); this.blip(); }
+    else if (row === 6) s.rumble = s.rumble ? 0 : 1;
+    if (row <= 6) { G.saveSettings(s); this.blip(); }
     if (this.audio) this.audio.applySettings(s);
   }
+  /* CONTROLS: KEYBOARD remaps one player's keys, CONTROLLER remaps the shared
+     standard-pad layout. Both tabs list the same actions plus a RESET row, and
+     clicking a drawn key or pad button jumps straight to binding it. */
   navRemap() {
-    const c = this.cfg, keys = ACT;
-    if (c.waiting) {
-      const code = G.Input.captureKey();
-      if (code) {
-        const other = this.settings.keys[c.player ? 'p2' : 'p1'];
-        if (Object.keys(other).some(k => k !== keys[c.row] && other[k] === code)) { this.toast = this.tr('keys_conflict'); this.toastT = 90; }
-        else { other[keys[c.row]] = code; G.saveSettings(this.settings); c.waiting = false; this.blip(true); }
+    const c = this.cfg, I = G.Input;
+    const count = ACT.length + 1, resetRow = ACT.length;
+    if (c.tab === 'pad') {
+      if (c.padWaiting) {
+        const cap = I.takePadCapture();
+        if (cap) {
+          const a = ACT[c.row];
+          if (a) I.setPadBinding(a, cap.index);
+          c.padWaiting = false; this.blip(true);
+        } else if (this.just('pause')) { c.padWaiting = false; I.setPadWaiting(false); }
+        return;
       }
-      if (G.Input.just('p1', 'back')) c.waiting = false;
+      if (I.just('p1', 'up')) { c.row = (c.row + count - 1) % count; this.blip(); }
+      if (I.just('p1', 'down')) { c.row = (c.row + 1) % count; this.blip(); }
+      if (I.just('p1', 'left') || I.just('p1', 'right') || this.just('special')) { c.tab = 'keys'; this.blip(); return; }
+      if (this.confirm()) {
+        if (c.row === resetRow) { I.resetBindings(); this.blip(true); }
+        else { c.padWaiting = true; I.setPadWaiting(true); }
+      }
+      if (this.cancel()) this.cfg = null;
       return;
     }
-    if (G.Input.just('p1', 'up')) { c.row = (c.row + keys.length - 1) % keys.length; this.blip(); }
-    if (G.Input.just('p1', 'down')) { c.row = (c.row + 1) % keys.length; this.blip(); }
-    if (G.Input.just('p1', 'left') || G.Input.just('p1', 'right')) { c.player = c.player ? 0 : 1; this.blip(); }
-    if (G.Input.just('p1', 'start') || G.Input.just('p1', 'attack')) c.waiting = true;
-    if (G.Input.just('p1', 'back')) this.cfg = null;
+    const keys = this.settings.keys[c.player ? 'p2' : 'p1'];
+    if (c.waiting) {
+      const code = I.captureKey();
+      if (code) {
+        const a = ACT[c.row];
+        if (Object.keys(keys).some(k => k !== a && keys[k] === code)) { this.toastMsg(this.tr('keys_conflict')); }
+        else { keys[a] = code; G.saveSettings(this.settings); I.refresh(); this.blip(true); }
+        c.waiting = false;
+      } else if (I.just('p1', 'pause')) { c.waiting = false; I.setWaiting(false); }
+      return;
+    }
+    if (I.just('p1', 'up')) { c.row = (c.row + count - 1) % count; this.blip(); }
+    if (I.just('p1', 'down')) { c.row = (c.row + 1) % count; this.blip(); }
+    if (I.just('p1', 'left') || I.just('p1', 'right')) { c.player = c.player ? 0 : 1; this.blip(); }
+    if (this.just('special')) { c.tab = 'pad'; this.blip(); return; }
+    if (this.confirm()) {
+      if (c.row === resetRow) { I.resetBindings(); this.blip(true); }
+      else { c.waiting = true; I.setWaiting(true); }
+    }
+    if (this.cancel()) { this.cfg = null; I.setWaiting(false); }
   }
   goto(s) {
     this.screen = s; this.menu = 0; this.sub = 0;
@@ -295,7 +333,7 @@ class Game {
       if (G.Input.just('p2', 'left')) { this.selP2 = (this.selP2 + n - 1) % n; this.blip(); }
       if (G.Input.just('p2', 'right')) { this.selP2 = (this.selP2 + 1) % n; this.blip(); }
     }
-    if (G.Input.just('p1', 'start') || G.Input.just('p1', 'attack')) {
+    if (this.confirm()) {
       this.p1 = G.CH_ORDER[this.sel];
       this.p2 = this.mode === 'local' ? G.CH_ORDER[this.selP2 === this.sel ? (this.selP2 + 1) % n : this.selP2] : 'vv';
       if (this.mode === 'online') { this.beginOnlineLobby(); return; }
@@ -308,7 +346,7 @@ class Game {
     if (this.mode === 'online' && !this.isHost()) return;    /* guest waits for the host */
     if (G.Input.just('p1', 'up')) { this.menu = (this.menu + rows.length - 1) % rows.length; this.blip(); }
     if (G.Input.just('p1', 'down')) { this.menu = (this.menu + 1) % rows.length; this.blip(); }
-    if (G.Input.just('p1', 'start') || G.Input.just('p1', 'attack')) {
+    if (this.confirm()) {
       if (this.menu === 0) this.resume();
       else if (this.menu === 1) { this.restartStage(); }
       else if (this.menu === 2) { this.pauseHost = true; this.goto('settings'); this.returnScreen = 'pause'; }
@@ -321,7 +359,7 @@ class Game {
     const rows = ['over_continue', 'over_title_btn'];
     if (G.Input.just('p1', 'up') || G.Input.just('p1', 'left')) { this.menu = 0; this.blip(); }
     if (G.Input.just('p1', 'down') || G.Input.just('p1', 'right')) { this.menu = 1; this.blip(); }
-    if (G.Input.just('p1', 'start') || G.Input.just('p1', 'attack')) {
+    if (this.confirm()) {
       if (this.menu === 0) { this.lives = 3; this.newGame(this.mode, { stage: this.stageIdx }); }
       else this.goto('title');
       this.blip(true);
@@ -434,6 +472,7 @@ class Game {
     if (ax) p.face = ax;
     if (this.consume('jump', p.pid) && p.state !== 'land') { p.state = 'jump'; p.vz = JUMPV; p.vx *= .9; p.vy *= .6; this.setAnim(p, 'jump'); if (this.audio) this.audio.sfx('jump'); return; }
     if (this.consume('special', p.pid) && p.hype > 3) { this.startSpecial(p); return; }
+    if (this.consume('heavy', p.pid)) { this.startHeavy(p); return; }
     if (this.consume('attack', p.pid)) { this.startAttack(p, p.chainTimer > 0 && p.step < 2 ? p.step + 1 : 0); return; }
     if (this.consume('grab', p.pid)) { this.tryGrab(p); if (p.state === 'grab') return; }
     const spd = p.baseSpd;
@@ -451,23 +490,42 @@ class Game {
   walkPhase(e, sp) { e.phase = (e.phase + sp / e.stride) % 1; e.frame = Math.floor(e.phase * 8) % 8; }
   startAttack(p, step) {
     p.state = 'attack'; p.step = clamp(step, 0, 2); p.hitSet = new Set(); p.swung = false;
+    p.heavy = false; p.queued = false;
     p.vx *= .15; p.vy *= .15;
     this.restartAnim(p, ['a1', 'a2', 'a3'][p.step]);
     if (this.audio) this.audio.sfx('swing');
   }
+  /* HEAVY: the finisher swing on its own button - slower and stronger, and it
+     always takes the target off their feet. It never chains into the combo. */
+  startHeavy(p) {
+    p.state = 'attack'; p.step = 2; p.heavy = true; p.queued = false; p.hitSet = new Set();
+    p.vx *= .12; p.vy *= .12;
+    this.restartAnim(p, 'a3');
+    if (this.audio) this.audio.sfx('swing');
+  }
+  heavyMove(p) {
+    const m = p.def.moves[2];
+    return {
+      box: m.box, active: m.active, dmg: Math.round(m.dmg * 1.3), kb: m.kb * 1.2,
+      stun: m.stun + 8, hs: m.hs + 3, hype: Math.max(2, m.hype - 3), knock: true,
+      launch: (m.launch || 3) * 1.06
+    };
+  }
   playerAttack(p) {
-    const mv = p.def.moves[p.step];
-    /* a tap during the move is queued and fires on recovery: forgiving, not mashed */
-    if (this.consume('attack', p.pid)) p.queued = true;
+    const mv = p.heavy ? this.heavyMove(p) : p.def.moves[p.step];
+    /* a tap during the move is queued and fires on recovery: forgiving, not mashed.
+       HEAVY is one committed blow, so it never queues a follow-up. */
+    if (!p.heavy && this.consume('attack', p.pid)) p.queued = true;
     this.advance(p, false);
     p.x += p.vx; p.vx *= .78;
     if (mv.active.includes(p.frame)) {
-      if (p.step === 2 && p.frame === 2 && !p.lunged2) { p.lunged2 = true; p.vx = p.face * 2.1; }
+      if (!p.heavy && p.step === 2 && p.frame === 2 && !p.lunged2) { p.lunged2 = true; p.vx = p.face * 2.1; }
       this.strike(p, mv, p.hitSet);
     }
     if (p.done) {
-      p.lunged2 = false;
-      const next = p.queued && p.step < 2 ? p.step + 1 : 0;
+      const wasHeavy = p.heavy;
+      p.lunged2 = false; p.heavy = false;
+      const next = !wasHeavy && p.queued && p.step < 2 ? p.step + 1 : 0;
       p.queued = false;
       p.chainTimer = next ? 16 : 0;
       p.step = next;
@@ -544,7 +602,7 @@ class Game {
     if (p.state === 'grab') {
       this.advance(p, true);
       if (this.consume('attack', p.pid)) { p.state = 'gstrike'; this.restartAnim(p, 'gstrike'); p.struck = false; }
-      else if (this.consume('grab', p.pid) || this.consume('jump', p.pid)) {
+      else if (this.consume('grab', p.pid) || this.consume('jump', p.pid) || this.consume('heavy', p.pid)) {
         const ax = this.axisX(p.pid); if (ax) p.face = ax;
         p.state = 'throw'; this.restartAnim(p, 'throw'); p.thrown = false;
       }
@@ -698,6 +756,7 @@ class Game {
     this.hitstop = Math.max(this.hitstop, mv.hs || 3);
     this.shake = Math.max(this.shake, heavy ? 3.4 : 1.5);
     this.spark(sx, t.y, sz, heavy, who.pid);
+    if (G.Input && G.Input.rumble) G.Input.rumble(knock ? .9 : heavy ? .6 : .32);
     if (this.audio) this.audio.sfx(t.hp <= 0 && !t.dummy ? 'ko' : heavy ? 'heavy' : 'hit');
     if (who.team === 'p') {
       if (t.team === 'e') {
@@ -1023,6 +1082,20 @@ class Game {
   /* pointer/touch: a rendered hot region was activated */
   clickHot(hot) {
     if (!hot) return;
+    if (this.cfg) {
+      if (hot.act === 'tab') { this.cfg.tab = hot.s; this.blip(); return; }
+      if (hot.act === 'ctlrow') { this.cfg.row = hot.i; this.blip(); return; }
+      if (hot.act === 'padcap') {
+        const a = G.Input.actionForPad(hot.i);
+        if (a) this.cfg.row = ACT.indexOf(a); else this.cfg.row = ACT.length;
+        this.cfg.tab = 'pad'; this.cfg.padWaiting = true; G.Input.setPadWaiting(true); return;
+      }
+      if (hot.act === 'keycap') {
+        const i = ACT.indexOf(hot.a); if (i >= 0) this.cfg.row = i;
+        this.cfg.tab = 'keys'; this.cfg.waiting = true; G.Input.setWaiting(true); return;
+      }
+      if (hot.act === 'reset') { G.Input.resetBindings(); this.blip(true); return; }
+    }
     if (hot.act === 'row' || hot.act === 'pick') { this.menu = hot.i; if (hot.act === 'pick') this.sel = hot.i; }
     this.activate();
   }
@@ -1041,9 +1114,9 @@ class Game {
     }
     if (sc === 'select') { this.navSelectConfirm(); return; }
     if (sc === 'settings') {
-      if (this.cfg) { this.cfg.waiting = true; return; }
-      if (this.menu === 6) this.cfg = { player: 0, row: 0, waiting: false };
-      else if (this.menu === 7) this.goto('main');
+      if (this.cfg) { this.cfg.tab = 'keys'; this.cfg.waiting = true; G.Input.setWaiting(true); return; }
+      if (this.menu === 7) this.cfg = { player: 0, row: 0, tab: 'keys', waiting: false, padWaiting: false };
+      else if (this.menu === 8) this.goto('main');
       else this.adjust(this.menu, 1);
       return;
     }
@@ -1079,7 +1152,7 @@ class Game {
   navJoin() {
     const I = G.Input;
     const code = G.Input.captureKey();
-    if (I.just('p1', 'back')) { this.goto('online'); return; }
+    if (this.cancel()) { this.goto('online'); return; }
     if (code) {
       if (code === 'Backspace') this.joinCode = (this.joinCode || '').slice(0, -1);
       else if (code === 'Enter') { if ((this.joinCode || '').length === 5) this.doJoin(); }
@@ -1097,10 +1170,10 @@ class Game {
   }
   navLobby() {
     const I = G.Input, L = this.lobby || {};
-    if (I.just('p1', 'back')) { this.leaveOnline(); return; }
+    if (this.cancel()) { this.leaveOnline(); return; }
     if (G.Input.keys['KeyC']) { try { navigator.clipboard.writeText(this.invite || ''); this.toastMsg('INVITE COPIED'); } catch (e) {} }
     if (!this.isHost()) {
-      if (I.just('p1', 'start') || I.just('p1', 'attack')) { this.ready = !this.ready; this.net.send({ t: 'ready', r: this.ready }); this.blip(true); }
+      if (this.confirm()) { this.ready = !this.ready; this.net.send({ t: 'ready', r: this.ready }); this.blip(true); }
       if (I.just('p1', 'left') || I.just('p1', 'right')) {
         const i = (G.CH_ORDER.indexOf(this.p2) + (I.just('p1', 'right') ? 1 : 2)) % 3;
         this.p2 = G.CH_ORDER[i]; this.net.send({ t: 'pick', f: this.p2 }); this.blip();
@@ -1116,7 +1189,7 @@ class Game {
       this.settings.stage = ((this.settings.stage | 0) + (I.just('p1', 'down') ? 1 : 3)) % 4;
       G.saveSettings(this.settings); this.net.pushLobby(); this.blip();
     }
-    if (I.just('p1', 'start') || I.just('p1', 'attack')) {
+    if (this.confirm()) {
       if (this.net.canStart()) { this.net.start(); this.blip(true); }
       else { this.toastMsg(this.tr('lobby_waiting')); }
     }

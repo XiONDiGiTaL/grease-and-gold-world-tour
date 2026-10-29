@@ -150,6 +150,7 @@ function renderFrame(game) {
     let n = 0;
     while (acc >= STEP && n < 5) {
       G.Input.pollPads();
+      if (G.Input.padJustConnected) { game.toastMsg('CONTROLLER CONNECTED'); G.Input.padJustConnected = null; }
       G.Input.compute();
       game.update();
       G.Input.tick();

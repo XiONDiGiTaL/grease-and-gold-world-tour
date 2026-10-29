@@ -7,8 +7,12 @@
 G.LW = 480; G.LH = 270;                 /* logical world resolution */
 G.FT = 150; G.FB = 244;                 /* walkable lane band (feet y) */
 G.STEP = 1000 / 60;
-G.VERSION = '2.0.0';
-G.PROTO = 2;
+G.VERSION = '2.2.0';
+G.PROTO = 3;
+
+/* The game's own buttons. Order matters: it is the order the controls screen
+   lists them in and the order the online input mask packs them. */
+G.ACT = ['left', 'right', 'up', 'down', 'attack', 'heavy', 'jump', 'grab', 'special', 'start', 'pause'];
 
 G.clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 G.lerp = (a, b, t) => a + (b - a) * t;
@@ -122,7 +126,7 @@ const STR = {
     main_settings: 'SETTINGS', main_credits: 'CREDITS',
     mode_solo: 'SOLO', mode_local: 'LOCAL CO-OP', mode_online: 'ONLINE CO-OP', mode_back: 'BACK',
     select_title: 'CHOOSE YOUR FIGHTER', select_p1: 'PLAYER 1', select_p2: 'PLAYER 2',
-    select_locked: 'TAKEN', select_confirm: 'ENTER  SELECT', select_back: 'ESC  BACK',
+    select_locked: 'TAKEN', select_confirm: 'Z  SELECT', select_back: 'X  BACK',
     lobby_title: 'ONLINE LOBBY', lobby_code: 'ROOM CODE', lobby_waiting: 'WAITING FOR PLAYER 2',
     lobby_ready: 'READY', lobby_notready: 'NOT READY', lobby_start: 'START TOUR',
     lobby_leave: 'LEAVE ROOM', lobby_host: 'HOST', lobby_guest: 'GUEST', lobby_you: 'YOU',
@@ -141,17 +145,26 @@ const STR = {
     victory_title: 'TOUR COMPLETE', victory_sub: 'GREASE & GOLD TOOK THE CROWN',
     credits_title: 'CREDITS', settings_title: 'SETTINGS',
     set_music: 'MUSIC', set_sfx: 'SFX', set_shake: 'SCREEN SHAKE', set_flash: 'FLASH EFFECTS',
-    set_scan: 'CRT SCANLINES', set_lang: 'LANGUAGE', set_keys: 'CONTROLS', set_back: 'BACK',
+    set_scan: 'CRT SCANLINES', set_lang: 'LANGUAGE', set_rumble: 'PAD RUMBLE', set_keys: 'CONTROLS', set_back: 'BACK',
     on: 'ON', off: 'OFF', low: 'LOW', high: 'HIGH',
     keys_title: 'CONTROLS', keys_p1: 'PLAYER 1', keys_p2: 'PLAYER 2', keys_reset: 'RESET DEFAULTS',
     keys_press: 'PRESS A KEY', keys_conflict: 'KEY ALREADY USED',
-    act_left: 'LEFT', act_right: 'RIGHT', act_up: 'UP', act_down: 'DOWN', act_attack: 'ATTACK',
-    act_jump: 'JUMP', act_special: 'SPECIAL', act_grab: 'GRAB', act_start: 'START', act_pause: 'PAUSE',
-    howto_title: 'HOW TO PLAY', howto_move: 'MOVE', howto_move_d: 'ARROWS / WASD  -  MOVE IN AND OUT OF THE SCREEN TO DODGE LANES',
-    howto_atk: 'ATTACK', howto_atk_d: 'TAP 3 TIMES FOR A COMBO. THE THIRD HIT KNOCKS DOWN',
-    howto_spec: 'SPECIAL', howto_spec_d: 'HOLD WITH HYPE. DRAINS WHILE HELD, REFILLS ONLY WITH NORMAL HITS',
-    howto_jump: 'JUMP', howto_jump_d: 'ATTACK IN THE AIR TO STRIKE, DOWN + ATTACK TO DIVE',
-    howto_grab: 'GRAB', howto_grab_d: 'NEAR AN ENEMY: GRAB, THEN ATTACK TO STRIKE OR GRAB AGAIN TO THROW',
+    ctl_tab_keys: 'KEYBOARD', ctl_tab_pad: 'CONTROLLER',
+    ctl_hint_keys: 'UP/DOWN PICK   ENTER REBIND   LEFT/RIGHT PLAYER   V PAD',
+    ctl_hint_pad: 'UP/DOWN PICK   ENTER BIND   THEN PRESS A PAD BUTTON',
+    ctl_pad_none: 'NO PAD CONNECTED',
+    ctl_pad_ok: 'PAD READY',
+    ctl_pad_std: 'STANDARD MAPPING - XBOX LAYOUT',
+    ctl_lh: 'LEFT HAND', ctl_rh: 'RIGHT HAND', ctl_move: 'MOVE',
+    ctl_tap: 'CLICK A KEY TO REBIND',
+    act_left: 'LEFT', act_right: 'RIGHT', act_up: 'UP', act_down: 'DOWN', act_attack: 'LIGHT',
+    act_heavy: 'HEAVY', act_jump: 'JUMP', act_special: 'SPECIAL', act_grab: 'GRAB', act_start: 'START', act_pause: 'PAUSE',
+    howto_title: 'HOW TO PLAY', howto_move: 'MOVE', howto_move_d: 'ARROWS  -  MOVE IN AND OUT OF THE SCREEN TO DODGE LANES',
+    howto_atk: 'LIGHT', howto_atk_d: 'Z  -  TAP THREE TIMES FOR THE COMBO. THE THIRD HIT KNOCKS DOWN',
+    howto_heavy: 'HEAVY', howto_heavy_d: 'X  -  ONE SLOW BLOW THAT ALWAYS KNOCKS DOWN. THROWS WHOEVER YOU HOLD',
+    howto_spec: 'SPECIAL', howto_spec_d: 'HOLD V WITH HYPE. DRAINS WHILE HELD, REFILLS ONLY WITH NORMAL HITS',
+    howto_jump: 'JUMP', howto_jump_d: 'SPACE  -  LIGHT IN THE AIR TO STRIKE, DOWN + LIGHT TO DIVE',
+    howto_grab: 'GRAB', howto_grab_d: 'S  -  NEAR AN ENEMY: GRAB, THEN LIGHT TO STRIKE OR GRAB AGAIN TO THROW',
     howto_food: 'FOOD', howto_food_d: 'SMASH CRATES AND BARRELS. KEBABS HEAL. DONER SPIT HEALS MOST',
     howto_coop: 'CO-OP', howto_coop_d: 'REVIVE A DOWNED PARTNER BY STANDING CLOSE. SHARED LIVES',
     train_title: 'TRAINING', train_dummy: 'DUMMY', train_reset: 'R RESETS THE DUMMY',
@@ -201,13 +214,22 @@ const STR = {
     on: 'ACIK', off: 'KAPALI', low: 'AZ', high: 'COK',
     keys_title: 'KONTROLLER', keys_p1: 'OYUNCU 1', keys_p2: 'OYUNCU 2', keys_reset: 'VARSAYILANA DON',
     keys_press: 'BIR TUS BAS', keys_conflict: 'TUS ZATEN KULLANILIYOR',
-    act_left: 'SOL', act_right: 'SAG', act_up: 'YUKARI', act_down: 'ASAGI', act_attack: 'VURUS',
-    act_jump: 'ZIPLA', act_special: 'OZEL', act_grab: 'TUT', act_start: 'BASLA', act_pause: 'DURAKLAT',
-    howto_title: 'NASIL OYNANIR', howto_move: 'HAREKET', howto_move_d: 'YON TUSLARI / WASD  -  DERINLIKTE HAREKET ET',
-    howto_atk: 'VURUS', howto_atk_d: '3 KEZ BAS: KOMBO. UCUNCU VURUS YERE SERER',
-    howto_spec: 'OZEL', howto_spec_d: 'HYPE ILE BASILI TUT. TUTARKEN AZALIR, SADECE NORMAL VURUSLARLA DOLAR',
-    howto_jump: 'ZIPLAMA', howto_jump_d: 'HAVADA VURUS, ASAGI + VURUS DALIS',
-    howto_grab: 'TUTMA', howto_grab_d: 'YAKINDA TUT, SONRA VUR VEYA TEKRAR TUTUP FIRLAT',
+    ctl_tab_keys: 'KLAVYE', ctl_tab_pad: 'KUMANDA',
+    ctl_hint_keys: 'YUKARI/ASAGI SEC   ENTER ATA   SOL/SAG OYUNCU   V KUMANDA',
+    ctl_hint_pad: 'YUKARI/ASAGI SEC   ENTER ATA   SONRA TUSA BAS',
+    ctl_pad_none: 'KUMANDA YOK',
+    ctl_pad_ok: 'KUMANDA HAZIR',
+    ctl_pad_std: 'STANDART ESLEME - XBOX DUZENI',
+    ctl_lh: 'SOL EL', ctl_rh: 'SAG EL', ctl_move: 'HAREKET',
+    ctl_tap: 'ATAMAK ICIN TUSA TIKLA',
+    act_left: 'SOL', act_right: 'SAG', act_up: 'YUKARI', act_down: 'ASAGI', act_attack: 'HAFIF',
+    act_heavy: 'AGIR', act_jump: 'ZIPLA', act_special: 'OZEL', act_grab: 'TUT', act_start: 'BASLA', act_pause: 'DURAKLAT',
+    howto_title: 'NASIL OYNANIR', howto_move: 'HAREKET', howto_move_d: 'YON TUSLARI  -  DERINLIKTE HAREKET ET',
+    howto_atk: 'HAFIF', howto_atk_d: 'Z  -  3 KEZ BAS: KOMBO. UCUNCU VURUS YERE SERER',
+    howto_heavy: 'AGIR', howto_heavy_d: 'X  -  YAVAS TEK VURUS, HER ZAMAN YERE SERER. TUTULANI FIRLATIR',
+    howto_spec: 'OZEL', howto_spec_d: 'HYPE ILE V BASILI TUT. TUTARKEN AZALIR, SADECE NORMAL VURUSLARLA DOLAR',
+    howto_jump: 'ZIPLAMA', howto_jump_d: 'SPACE  -  HAVADA HAFIF, ASAGI + HAFIF DALIS',
+    howto_grab: 'TUTMA', howto_grab_d: 'S  -  YAKINDA TUT, SONRA HAFIF VEYA TEKRAR TUTUP FIRLAT',
     howto_food: 'YEMEK', howto_food_d: 'KASA VE VARILLERI KIR. KEBAP CAN VERIR. DONER EN COK',
     howto_coop: 'ORTAK', howto_coop_d: 'DUSEN ARKADASININ YANINDA DUR, KALDIR. CANLAR ORTAK',
     train_title: 'ANTRENMAN', train_dummy: 'KUKLA', train_reset: 'R KUKLAYI SIFIRLAR',
@@ -238,11 +260,27 @@ G.t = function (k, lang) {
 /* ---------- persistence ---------- */
 G.DEFAULTS = {
   music: 0.55, sfx: 0.8, shake: 1, flash: 1, scanlines: 1, lang: 'en',
-  shakeAllow: true, diff: 1, stage: 0,
+  shakeAllow: true, diff: 1, stage: 0, rumble: 1,
+  /* Emulator-pad keyboards: left hand moves, right hand fights. Light and
+     heavy sit on adjacent keys under the right hand, jump beside them, grab on
+     the left of that block and special one key further in. P2's block never
+     collides with P1's. */
   keys: {
-    p1: { left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown', attack: 'KeyJ', jump: 'KeyK', special: 'KeyL', grab: 'KeyU', start: 'Enter', pause: 'Escape' },
-    p2: { left: 'KeyA', right: 'KeyD', up: 'KeyW', down: 'KeyS', attack: 'KeyF', jump: 'KeyG', special: 'KeyH', grab: 'KeyT', start: 'ShiftRight', pause: 'Escape' }
-  }
+    p1: {
+      left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown',
+      attack: 'KeyZ', heavy: 'KeyX', jump: 'Space', grab: 'KeyS', special: 'KeyV',
+      start: 'Enter', pause: 'Escape'
+    },
+    p2: {
+      left: 'Digit4', right: 'Digit6', up: 'Digit8', down: 'Digit2',
+      attack: 'KeyO', heavy: 'Semicolon', jump: 'KeyP', grab: 'Quote', special: 'BracketLeft',
+      start: 'ShiftRight', pause: 'Escape'
+    }
+  },
+  /* Standard-mapping pad (W3C indices): light X, heavy Y, jump A, grab B,
+     special RT, Start pauses, Back leaves a screen. D-pad and the left stick
+     always move. */
+  pad: { attack: 2, heavy: 3, jump: 0, grab: 1, special: 7, start: 9, pause: 8 }
 };
 G.loadSettings = function () {
   const d = JSON.parse(JSON.stringify(G.DEFAULTS));
@@ -252,6 +290,7 @@ G.loadSettings = function () {
       const s = JSON.parse(raw);
       Object.keys(d).forEach(k => { if (s[k] !== undefined) d[k] = s[k]; });
       if (s.keys) { d.keys.p1 = Object.assign(d.keys.p1, s.keys.p1 || {}); d.keys.p2 = Object.assign(d.keys.p2, s.keys.p2 || {}); }
+      if (s.pad) d.pad = Object.assign(d.pad, s.pad);
     }
   } catch (e) { /* storage may be blocked */ }
   return d;
@@ -261,8 +300,12 @@ G.saveSettings = function (s) {
 };
 G.KEYLABEL = function (code) {
   if (!code) return '-';
-  return String(code).replace(/^Key/, '').replace(/^Digit/, '').replace(/^Arrow/, '').replace('ShiftRight', 'R-SHIFT')
-    .replace('ShiftLeft', 'L-SHIFT').replace('Space', 'SPACE').replace('Enter', 'ENTER').replace('Escape', 'ESC')
-    .replace('ControlLeft', 'L-CTRL').replace('ControlRight', 'R-CTRL').replace('Backspace', 'BKSP').toUpperCase();
+  const punct = { Semicolon: ';', Quote: "'", BracketLeft: '[', BracketRight: ']', Backslash: '\\',
+    Slash: '/', Comma: ',', Period: '.', Backquote: '`', Minus: '-', Equal: '=' };
+  if (punct[code]) return punct[code];
+  return String(code).replace(/^Key/, '').replace(/^Digit/, '').replace(/^Arrow/, '').replace(/^Numpad/, 'NUM ')
+    .replace('ShiftRight', 'R-SHIFT').replace('ShiftLeft', 'L-SHIFT').replace('Space', 'SPACE')
+    .replace('Enter', 'ENTER').replace('Escape', 'ESC').replace('Backspace', 'BKSP')
+    .replace('ControlLeft', 'L-CTRL').replace('ControlRight', 'R-CTRL').toUpperCase();
 };
 })(globalThis.GG = globalThis.GG || {});

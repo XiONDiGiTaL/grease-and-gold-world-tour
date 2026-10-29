@@ -18,10 +18,11 @@ body{display:flex;align-items:center;justify-content:center;padding:env(safe-are
 #dpad::after{top:50%;left:16%;height:6px;width:68%;transform:translateY(-50%)}
 .btn{position:absolute;width:66px;height:66px;border-radius:50%;background:rgba(20,9,28,.5);border:3px solid rgba(242,182,48,.7);color:var(--cream);font:900 13px "Arial Black",Impact,sans-serif;display:flex;align-items:center;justify-content:center;letter-spacing:.5px}
 .btn.down{background:rgba(242,182,48,.5);color:var(--ink)}
-#bA{right:calc(104px + env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));width:78px;height:78px}
-#bJ{right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(54px + env(safe-area-inset-bottom,0px))}
-#bS{right:calc(66px + env(safe-area-inset-right,0px));bottom:calc(112px + env(safe-area-inset-bottom,0px));border-color:var(--mag)}
-#bG{right:calc(150px + env(safe-area-inset-right,0px));bottom:calc(100px + env(safe-area-inset-bottom,0px));width:54px;height:54px;font-size:12px}
+#bA{right:calc(112px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));width:78px;height:78px}
+#bH{right:calc(24px + env(safe-area-inset-right,0px));bottom:calc(44px + env(safe-area-inset-bottom,0px));width:62px;height:62px;border-color:var(--mag)}
+#bJ{right:calc(104px + env(safe-area-inset-right,0px));bottom:calc(104px + env(safe-area-inset-bottom,0px));width:56px;height:56px;font-size:12px}
+#bG{right:calc(172px + env(safe-area-inset-right,0px));bottom:calc(88px + env(safe-area-inset-bottom,0px));width:52px;height:52px;font-size:12px}
+#bS{right:calc(24px + env(safe-area-inset-right,0px));bottom:calc(120px + env(safe-area-inset-bottom,0px));width:52px;height:52px;font-size:12px}
 #bP{right:calc(10px + env(safe-area-inset-right,0px));top:calc(8px + env(safe-area-inset-top,0px));width:38px;height:38px;font-size:14px;border-width:2px}
 .note{position:fixed;left:0;right:0;bottom:4px;text-align:center;color:#5b4a72;font:11px/1.4 monospace;pointer-events:none}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -31,9 +32,10 @@ body{display:flex;align-items:center;justify-content:center;padding:env(safe-are
 <div id="touch">
   <div id="dpad"></div>
   <div class="btn" id="bA" data-btn="attack">ATK</div>
+  <div class="btn" id="bH" data-btn="heavy">HVY</div>
   <div class="btn" id="bJ" data-btn="jump">JMP</div>
-  <div class="btn" id="bS" data-btn="special">SPC</div>
   <div class="btn" id="bG" data-btn="grab">GRB</div>
+  <div class="btn" id="bS" data-btn="special">SPC</div>
   <div class="btn" id="bP" data-btn="pause">II</div>
 </div>
 <script>window.GG_ASSET_HASH="5a5dc87daab4";</script>
@@ -49,8 +51,12 @@ body{display:flex;align-items:center;justify-content:center;padding:env(safe-are
 G.LW = 480; G.LH = 270;                 /* logical world resolution */
 G.FT = 150; G.FB = 244;                 /* walkable lane band (feet y) */
 G.STEP = 1000 / 60;
-G.VERSION = '2.0.0';
-G.PROTO = 2;
+G.VERSION = '2.2.0';
+G.PROTO = 3;
+
+/* The game's own buttons. Order matters: it is the order the controls screen
+   lists them in and the order the online input mask packs them. */
+G.ACT = ['left', 'right', 'up', 'down', 'attack', 'heavy', 'jump', 'grab', 'special', 'start', 'pause'];
 
 G.clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 G.lerp = (a, b, t) => a + (b - a) * t;
@@ -164,7 +170,7 @@ const STR = {
     main_settings: 'SETTINGS', main_credits: 'CREDITS',
     mode_solo: 'SOLO', mode_local: 'LOCAL CO-OP', mode_online: 'ONLINE CO-OP', mode_back: 'BACK',
     select_title: 'CHOOSE YOUR FIGHTER', select_p1: 'PLAYER 1', select_p2: 'PLAYER 2',
-    select_locked: 'TAKEN', select_confirm: 'ENTER  SELECT', select_back: 'ESC  BACK',
+    select_locked: 'TAKEN', select_confirm: 'Z  SELECT', select_back: 'X  BACK',
     lobby_title: 'ONLINE LOBBY', lobby_code: 'ROOM CODE', lobby_waiting: 'WAITING FOR PLAYER 2',
     lobby_ready: 'READY', lobby_notready: 'NOT READY', lobby_start: 'START TOUR',
     lobby_leave: 'LEAVE ROOM', lobby_host: 'HOST', lobby_guest: 'GUEST', lobby_you: 'YOU',
@@ -183,17 +189,26 @@ const STR = {
     victory_title: 'TOUR COMPLETE', victory_sub: 'GREASE & GOLD TOOK THE CROWN',
     credits_title: 'CREDITS', settings_title: 'SETTINGS',
     set_music: 'MUSIC', set_sfx: 'SFX', set_shake: 'SCREEN SHAKE', set_flash: 'FLASH EFFECTS',
-    set_scan: 'CRT SCANLINES', set_lang: 'LANGUAGE', set_keys: 'CONTROLS', set_back: 'BACK',
+    set_scan: 'CRT SCANLINES', set_lang: 'LANGUAGE', set_rumble: 'PAD RUMBLE', set_keys: 'CONTROLS', set_back: 'BACK',
     on: 'ON', off: 'OFF', low: 'LOW', high: 'HIGH',
     keys_title: 'CONTROLS', keys_p1: 'PLAYER 1', keys_p2: 'PLAYER 2', keys_reset: 'RESET DEFAULTS',
     keys_press: 'PRESS A KEY', keys_conflict: 'KEY ALREADY USED',
-    act_left: 'LEFT', act_right: 'RIGHT', act_up: 'UP', act_down: 'DOWN', act_attack: 'ATTACK',
-    act_jump: 'JUMP', act_special: 'SPECIAL', act_grab: 'GRAB', act_start: 'START', act_pause: 'PAUSE',
-    howto_title: 'HOW TO PLAY', howto_move: 'MOVE', howto_move_d: 'ARROWS / WASD  -  MOVE IN AND OUT OF THE SCREEN TO DODGE LANES',
-    howto_atk: 'ATTACK', howto_atk_d: 'TAP 3 TIMES FOR A COMBO. THE THIRD HIT KNOCKS DOWN',
-    howto_spec: 'SPECIAL', howto_spec_d: 'HOLD WITH HYPE. DRAINS WHILE HELD, REFILLS ONLY WITH NORMAL HITS',
-    howto_jump: 'JUMP', howto_jump_d: 'ATTACK IN THE AIR TO STRIKE, DOWN + ATTACK TO DIVE',
-    howto_grab: 'GRAB', howto_grab_d: 'NEAR AN ENEMY: GRAB, THEN ATTACK TO STRIKE OR GRAB AGAIN TO THROW',
+    ctl_tab_keys: 'KEYBOARD', ctl_tab_pad: 'CONTROLLER',
+    ctl_hint_keys: 'UP/DOWN PICK   ENTER REBIND   LEFT/RIGHT PLAYER   V PAD',
+    ctl_hint_pad: 'UP/DOWN PICK   ENTER BIND   THEN PRESS A PAD BUTTON',
+    ctl_pad_none: 'NO PAD CONNECTED',
+    ctl_pad_ok: 'PAD READY',
+    ctl_pad_std: 'STANDARD MAPPING - XBOX LAYOUT',
+    ctl_lh: 'LEFT HAND', ctl_rh: 'RIGHT HAND', ctl_move: 'MOVE',
+    ctl_tap: 'CLICK A KEY TO REBIND',
+    act_left: 'LEFT', act_right: 'RIGHT', act_up: 'UP', act_down: 'DOWN', act_attack: 'LIGHT',
+    act_heavy: 'HEAVY', act_jump: 'JUMP', act_special: 'SPECIAL', act_grab: 'GRAB', act_start: 'START', act_pause: 'PAUSE',
+    howto_title: 'HOW TO PLAY', howto_move: 'MOVE', howto_move_d: 'ARROWS  -  MOVE IN AND OUT OF THE SCREEN TO DODGE LANES',
+    howto_atk: 'LIGHT', howto_atk_d: 'Z  -  TAP THREE TIMES FOR THE COMBO. THE THIRD HIT KNOCKS DOWN',
+    howto_heavy: 'HEAVY', howto_heavy_d: 'X  -  ONE SLOW BLOW THAT ALWAYS KNOCKS DOWN. THROWS WHOEVER YOU HOLD',
+    howto_spec: 'SPECIAL', howto_spec_d: 'HOLD V WITH HYPE. DRAINS WHILE HELD, REFILLS ONLY WITH NORMAL HITS',
+    howto_jump: 'JUMP', howto_jump_d: 'SPACE  -  LIGHT IN THE AIR TO STRIKE, DOWN + LIGHT TO DIVE',
+    howto_grab: 'GRAB', howto_grab_d: 'S  -  NEAR AN ENEMY: GRAB, THEN LIGHT TO STRIKE OR GRAB AGAIN TO THROW',
     howto_food: 'FOOD', howto_food_d: 'SMASH CRATES AND BARRELS. KEBABS HEAL. DONER SPIT HEALS MOST',
     howto_coop: 'CO-OP', howto_coop_d: 'REVIVE A DOWNED PARTNER BY STANDING CLOSE. SHARED LIVES',
     train_title: 'TRAINING', train_dummy: 'DUMMY', train_reset: 'R RESETS THE DUMMY',
@@ -243,13 +258,22 @@ const STR = {
     on: 'ACIK', off: 'KAPALI', low: 'AZ', high: 'COK',
     keys_title: 'KONTROLLER', keys_p1: 'OYUNCU 1', keys_p2: 'OYUNCU 2', keys_reset: 'VARSAYILANA DON',
     keys_press: 'BIR TUS BAS', keys_conflict: 'TUS ZATEN KULLANILIYOR',
-    act_left: 'SOL', act_right: 'SAG', act_up: 'YUKARI', act_down: 'ASAGI', act_attack: 'VURUS',
-    act_jump: 'ZIPLA', act_special: 'OZEL', act_grab: 'TUT', act_start: 'BASLA', act_pause: 'DURAKLAT',
-    howto_title: 'NASIL OYNANIR', howto_move: 'HAREKET', howto_move_d: 'YON TUSLARI / WASD  -  DERINLIKTE HAREKET ET',
-    howto_atk: 'VURUS', howto_atk_d: '3 KEZ BAS: KOMBO. UCUNCU VURUS YERE SERER',
-    howto_spec: 'OZEL', howto_spec_d: 'HYPE ILE BASILI TUT. TUTARKEN AZALIR, SADECE NORMAL VURUSLARLA DOLAR',
-    howto_jump: 'ZIPLAMA', howto_jump_d: 'HAVADA VURUS, ASAGI + VURUS DALIS',
-    howto_grab: 'TUTMA', howto_grab_d: 'YAKINDA TUT, SONRA VUR VEYA TEKRAR TUTUP FIRLAT',
+    ctl_tab_keys: 'KLAVYE', ctl_tab_pad: 'KUMANDA',
+    ctl_hint_keys: 'YUKARI/ASAGI SEC   ENTER ATA   SOL/SAG OYUNCU   V KUMANDA',
+    ctl_hint_pad: 'YUKARI/ASAGI SEC   ENTER ATA   SONRA TUSA BAS',
+    ctl_pad_none: 'KUMANDA YOK',
+    ctl_pad_ok: 'KUMANDA HAZIR',
+    ctl_pad_std: 'STANDART ESLEME - XBOX DUZENI',
+    ctl_lh: 'SOL EL', ctl_rh: 'SAG EL', ctl_move: 'HAREKET',
+    ctl_tap: 'ATAMAK ICIN TUSA TIKLA',
+    act_left: 'SOL', act_right: 'SAG', act_up: 'YUKARI', act_down: 'ASAGI', act_attack: 'HAFIF',
+    act_heavy: 'AGIR', act_jump: 'ZIPLA', act_special: 'OZEL', act_grab: 'TUT', act_start: 'BASLA', act_pause: 'DURAKLAT',
+    howto_title: 'NASIL OYNANIR', howto_move: 'HAREKET', howto_move_d: 'YON TUSLARI  -  DERINLIKTE HAREKET ET',
+    howto_atk: 'HAFIF', howto_atk_d: 'Z  -  3 KEZ BAS: KOMBO. UCUNCU VURUS YERE SERER',
+    howto_heavy: 'AGIR', howto_heavy_d: 'X  -  YAVAS TEK VURUS, HER ZAMAN YERE SERER. TUTULANI FIRLATIR',
+    howto_spec: 'OZEL', howto_spec_d: 'HYPE ILE V BASILI TUT. TUTARKEN AZALIR, SADECE NORMAL VURUSLARLA DOLAR',
+    howto_jump: 'ZIPLAMA', howto_jump_d: 'SPACE  -  HAVADA HAFIF, ASAGI + HAFIF DALIS',
+    howto_grab: 'TUTMA', howto_grab_d: 'S  -  YAKINDA TUT, SONRA HAFIF VEYA TEKRAR TUTUP FIRLAT',
     howto_food: 'YEMEK', howto_food_d: 'KASA VE VARILLERI KIR. KEBAP CAN VERIR. DONER EN COK',
     howto_coop: 'ORTAK', howto_coop_d: 'DUSEN ARKADASININ YANINDA DUR, KALDIR. CANLAR ORTAK',
     train_title: 'ANTRENMAN', train_dummy: 'KUKLA', train_reset: 'R KUKLAYI SIFIRLAR',
@@ -280,11 +304,27 @@ G.t = function (k, lang) {
 /* ---------- persistence ---------- */
 G.DEFAULTS = {
   music: 0.55, sfx: 0.8, shake: 1, flash: 1, scanlines: 1, lang: 'en',
-  shakeAllow: true, diff: 1, stage: 0,
+  shakeAllow: true, diff: 1, stage: 0, rumble: 1,
+  /* Emulator-pad keyboards: left hand moves, right hand fights. Light and
+     heavy sit on adjacent keys under the right hand, jump beside them, grab on
+     the left of that block and special one key further in. P2's block never
+     collides with P1's. */
   keys: {
-    p1: { left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown', attack: 'KeyJ', jump: 'KeyK', special: 'KeyL', grab: 'KeyU', start: 'Enter', pause: 'Escape' },
-    p2: { left: 'KeyA', right: 'KeyD', up: 'KeyW', down: 'KeyS', attack: 'KeyF', jump: 'KeyG', special: 'KeyH', grab: 'KeyT', start: 'ShiftRight', pause: 'Escape' }
-  }
+    p1: {
+      left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown',
+      attack: 'KeyZ', heavy: 'KeyX', jump: 'Space', grab: 'KeyS', special: 'KeyV',
+      start: 'Enter', pause: 'Escape'
+    },
+    p2: {
+      left: 'Digit4', right: 'Digit6', up: 'Digit8', down: 'Digit2',
+      attack: 'KeyO', heavy: 'Semicolon', jump: 'KeyP', grab: 'Quote', special: 'BracketLeft',
+      start: 'ShiftRight', pause: 'Escape'
+    }
+  },
+  /* Standard-mapping pad (W3C indices): light X, heavy Y, jump A, grab B,
+     special RT, Start pauses, Back leaves a screen. D-pad and the left stick
+     always move. */
+  pad: { attack: 2, heavy: 3, jump: 0, grab: 1, special: 7, start: 9, pause: 8 }
 };
 G.loadSettings = function () {
   const d = JSON.parse(JSON.stringify(G.DEFAULTS));
@@ -294,6 +334,7 @@ G.loadSettings = function () {
       const s = JSON.parse(raw);
       Object.keys(d).forEach(k => { if (s[k] !== undefined) d[k] = s[k]; });
       if (s.keys) { d.keys.p1 = Object.assign(d.keys.p1, s.keys.p1 || {}); d.keys.p2 = Object.assign(d.keys.p2, s.keys.p2 || {}); }
+      if (s.pad) d.pad = Object.assign(d.pad, s.pad);
     }
   } catch (e) { /* storage may be blocked */ }
   return d;
@@ -303,9 +344,13 @@ G.saveSettings = function (s) {
 };
 G.KEYLABEL = function (code) {
   if (!code) return '-';
-  return String(code).replace(/^Key/, '').replace(/^Digit/, '').replace(/^Arrow/, '').replace('ShiftRight', 'R-SHIFT')
-    .replace('ShiftLeft', 'L-SHIFT').replace('Space', 'SPACE').replace('Enter', 'ENTER').replace('Escape', 'ESC')
-    .replace('ControlLeft', 'L-CTRL').replace('ControlRight', 'R-CTRL').replace('Backspace', 'BKSP').toUpperCase();
+  const punct = { Semicolon: ';', Quote: "'", BracketLeft: '[', BracketRight: ']', Backslash: '\\',
+    Slash: '/', Comma: ',', Period: '.', Backquote: '`', Minus: '-', Equal: '=' };
+  if (punct[code]) return punct[code];
+  return String(code).replace(/^Key/, '').replace(/^Digit/, '').replace(/^Arrow/, '').replace(/^Numpad/, 'NUM ')
+    .replace('ShiftRight', 'R-SHIFT').replace('ShiftLeft', 'L-SHIFT').replace('Space', 'SPACE')
+    .replace('Enter', 'ENTER').replace('Escape', 'ESC').replace('Backspace', 'BKSP')
+    .replace('ControlLeft', 'L-CTRL').replace('ControlRight', 'R-CTRL').toUpperCase();
 };
 })(globalThis.GG = globalThis.GG || {});
 
@@ -1597,44 +1642,74 @@ G.buildStage = function (i) {
 
 
 /* ---- input.js ---- */
-/* Input: two keyboard layouts, two gamepads, touch, remote (net) players.
+/* Input: emulator-pad keyboards per player, standard-mapping gamepads with a
+   remappable beat-'em-up layout, touch and remote (net) players.
    Every button is edge-latched for a few ticks so buffered combos work. */
 (function (G) {
 'use strict';
-const ACT = ['left', 'right', 'up', 'down', 'attack', 'jump', 'special', 'grab', 'start', 'pause'];
-const BUF = 10;
+const ACT = G.ACT;
+/* the buttons that travel over the wire: same order as the net input mask */
+const GAME = ['left', 'right', 'up', 'down', 'attack', 'heavy', 'jump', 'grab', 'special'];
+const BUF = 10, DEADZONE = .38, TRIGGER = .45;
+/* W3C standard-mapping button names */
+const PAD_NAMES = ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'BACK', 'START', 'L3', 'R3',
+  'D-UP', 'D-DOWN', 'D-LEFT', 'D-RIGHT', 'HOME'];
+
 const I = G.Input = {
   held: { p1: {}, p2: {} }, buf: { p1: {}, p2: {} }, edge: { p1: {}, p2: {} },
   remoteHeld: { p1: {}, p2: {} }, remoteJust: { p1: {}, p2: {} },
-  keys: {}, touch: {}, pads: {}, settings: null, waitingFor: null, _captured: null
+  keys: {}, touch: {}, pads: {}, padIds: {}, settings: null, waitingFor: null, padMap: {},
+  padName: (i) => PAD_NAMES[i] || ('B' + i)
 };
-['p1', 'p2'].forEach(p => ACT.forEach(a => { I.held[p][a] = false; I.buf[p][a] = 0; I.edge[p][a] = false; I.remoteHeld[p][a] = false; I.remoteJust[p][a] = false; }));
+const P = ['p1', 'p2'];
+P.forEach(p => ACT.forEach(a => {
+  I.held[p][a] = false; I.buf[p][a] = 0; I.edge[p][a] = false;
+  I.remoteHeld[p][a] = false; I.remoteJust[p][a] = false;
+}));
 
 I.init = function (settings) {
   I.settings = settings;
+  I.refresh();
   if (typeof window === 'undefined') return;
   window.addEventListener('keydown', e => {
     if (I.waitingFor) { I._captured = e.code; e.preventDefault(); return; }
-    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Tab'].includes(e.code)) e.preventDefault();
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Enter', 'Tab'].indexOf(e.code) >= 0) e.preventDefault();
     if (!I.keys[e.code]) I.pressCode(e.code);
     I.keys[e.code] = true;
   });
   window.addEventListener('keyup', e => { I.keys[e.code] = false; });
   window.addEventListener('blur', () => { I.keys = {}; I.touch = {}; I.clear(); });
+  /* plug-and-play: a connected standard pad needs no setup step */
+  window.addEventListener('gamepadconnected', (e) => {
+    I.padJustConnected = (e && e.gamepad && e.gamepad.id) || 'CONTROLLER';
+  });
+  window.addEventListener('gamepaddisconnected', () => { I.padJustConnected = null; });
 };
+
+/** Rebuild the key -> action lookup and pick up the current pad map. */
+I.refresh = function () {
+  const s = I.settings; if (!s) return;
+  I._rev = { p1: {}, p2: {} };
+  P.forEach(p => {
+    const map = s.keys[p] || {};
+    for (const a in map) if (map[a]) I._rev[p][map[a]] = a;
+  });
+  I.padMap = s.pad || (G.DEFAULTS && G.DEFAULTS.pad) || {};
+};
+
+/* ---------------- keyboard ---------------- */
 I.captureKey = function () {
   const c = I._captured; I._captured = null;
   if (c === 'Escape') return null;
   return c;
 };
-I.setWaiting = function (on) { I.waitingFor = on; I._captured = null; };
+I.setWaiting = function (on) { I.waitingFor = !!on; I._captured = null; };
 I.pressCode = function (code) {
-  if (!I.settings) return;
-  for (const p of ['p1', 'p2']) {
-    const map = I.settings.keys[p];
-    for (const a of ACT) if (map[a] === code) I.setEdge(p, a);
-  }
+  if (!I._rev) return;
+  P.forEach(p => { const a = I._rev[p][code]; if (a) I.setEdge(p, a); });
 };
+
+/* ---------------- shared latches ---------------- */
 I.setEdge = function (p, a) { I.buf[p][a] = BUF; I.edge[p][a] = true; };
 I.isHeld = function (p, a) { return !!I.held[p][a] || !!I.remoteHeld[p][a]; };
 I.just = function (p, a) { return !!I.edge[p][a] || !!I.remoteJust[p][a]; };
@@ -1643,9 +1718,9 @@ I.consume = function (p, a) {
   if (I.remoteJust[p][a]) { I.remoteJust[p][a] = false; return true; }
   return false;
 };
-I.setRemote = function (idx, heldMask, justMask, actions) {
+I.setRemote = function (idx, heldMask, justMask) {
   const p = idx === 0 ? 'p1' : 'p2';
-  (actions || ['left', 'right', 'up', 'down', 'attack', 'jump', 'special', 'grab']).forEach((a, i) => {
+  GAME.forEach((a, i) => {
     I.remoteHeld[p][a] = !!(heldMask & (1 << i));
     if (justMask & (1 << i)) { I.remoteJust[p][a] = true; I.buf[p][a] = BUF; }
   });
@@ -1654,69 +1729,128 @@ I.clearRemote = function (idx) {
   const p = idx === 0 ? 'p1' : 'p2';
   ACT.forEach(a => { I.remoteHeld[p][a] = false; I.remoteJust[p][a] = false; I.buf[p][a] = 0; });
 };
+
+/* ---------------- gamepads ---------------- */
+function activePads() {
+  if (typeof navigator === 'undefined' || !navigator.getGamepads) return [];
+  let list = [];
+  try { list = Array.prototype.slice.call(navigator.getGamepads()).filter(g => g && g.connected); } catch (e) { return []; }
+  return list;
+}
+/** Read one standard-mapping pad into the game's own action names. */
+function readPad(g) {
+  const b = (i) => !!(g.buttons[i] && (g.buttons[i].pressed || g.buttons[i].value > TRIGGER));
+  const ax = (g.axes && g.axes.length) ? (g.axes[0] || 0) : 0;
+  const ay = (g.axes && g.axes.length > 1) ? (g.axes[1] || 0) : 0;
+  const map = I.padMap || {};
+  const out = {};
+  ACT.forEach(a => { out[a] = map[a] !== undefined && map[a] !== null ? b(map[a]) : false; });
+  /* D-pad and the left stick always move, whatever the buttons are bound to */
+  out.left = out.left || ax < -DEADZONE || b(14);
+  out.right = out.right || ax > DEADZONE || b(15);
+  out.up = out.up || ay < -DEADZONE || b(12);
+  out.down = out.down || ay > DEADZONE || b(13);
+  return out;
+}
 I.pollPads = function () {
-  if (typeof navigator === 'undefined' || !navigator.getGamepads) return;
-  const pads = [...navigator.getGamepads()].filter(Boolean);
-  I.pads = {};
-  pads.slice(0, 2).forEach((g, idx) => {
-    const ax = g.axes[0] || 0, ay = g.axes[1] || 0, b = (i) => !!(g.buttons[i] && g.buttons[i].pressed);
-    I.pads['p' + (idx + 1)] = {
-      left: ax < -.35 || b(14), right: ax > .35 || b(15), up: ay < -.35 || b(12), down: ay > .35 || b(13),
-      attack: b(2), jump: b(0), special: b(1), grab: b(3), start: b(9), pause: b(8)
-    };
-  });
-  /* pad edges feed the same buffer as keys */
-  ['p1', 'p2'].forEach(p => {
-    const pad = I.pads[p]; if (!pad) return;
-    ACT.forEach(a => { if (pad[a] && !I._padPrev || !I._padPrev) {} });
-  });
-  if (!I._padPrev) I._padPrev = { p1: {}, p2: {} };
-  ['p1', 'p2'].forEach(p => {
-    const pad = I.pads[p] || {};
-    ACT.forEach(a => { if (pad[a] && !I._padPrev[p][a]) I.setEdge(p, a); });
-    I._padPrev[p] = Object.assign({}, pad);
+  const list = activePads();
+  I._raw = list.slice(0, 2);
+  /* rebinding: the next button pressed on any pad is the binding, and the pad
+     is swallowed so the menus do not move while we listen */
+  if (I._padCap) {
+    for (const g of list) {
+      for (let i = 0; i < 17; i++) {
+        if (g.buttons[i] && (g.buttons[i].pressed || g.buttons[i].value > TRIGGER)) {
+          I._padCaptured = { index: i, id: g.id || 'CONTROLLER' };
+          I._padCap = false;
+          break;
+        }
+      }
+      if (!I._padCap) break;
+    }
+    if (I._padCap) { I.pads = {}; return; }
+  }
+  I.pads = {}; I.padIds = {};
+  I._raw.forEach((g, slot) => {
+    const p = slot === 0 ? 'p1' : 'p2';
+    I.pads[p] = readPad(g);
+    I.padIds[p] = g.id || 'CONTROLLER';
   });
 };
+I.setPadWaiting = function (on) { I._padCap = !!on; I._padCaptured = null; };
+I.takePadCapture = function () { const v = I._padCaptured; I._padCaptured = null; return v; };
+I.padConnected = function () { return !!I.pads.p1 || !!I.pads.p2; };
+I.actionForPad = function (index) {
+  const m = I.padMap || {};
+  for (const a of ACT) if (m[a] === index) return a;
+  return null;
+};
+I.setPadBinding = function (a, index) {
+  if (!I.settings) return;
+  const m = Object.assign({}, I.padMap);
+  m[a] = index;
+  I.settings.pad = m; I.padMap = m;
+  G.saveSettings(I.settings);
+};
+I.resetBindings = function () {
+  if (!I.settings) return;
+  I.settings.keys = JSON.parse(JSON.stringify(G.DEFAULTS.keys));
+  I.settings.pad = Object.assign({}, G.DEFAULTS.pad);
+  G.saveSettings(I.settings);
+  I.refresh();
+  P.forEach(p => ACT.forEach(a => { I.buf[p][a] = 0; }));
+};
+I.rumble = function (strength) {
+  if (!I.settings || !I.settings.rumble) return;
+  const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+  if (now - (I._rumbleAt || 0) < 60) return;
+  I._rumbleAt = now;
+  const s = Math.max(0, Math.min(1, strength || .4));
+  (I._raw || []).forEach(g => {
+    try {
+      const act = g.vibrationActuator;
+      if (act && act.playEffect) {
+        act.playEffect('dual-rumble', { startDelay: 0, duration: 90, weakMagnitude: s * .7, strongMagnitude: s });
+      }
+    } catch (e) {}
+  });
+};
+
+/* ---------------- frame ---------------- */
 I.compute = function () {
   if (!I.settings) return;
-  ['p1', 'p2'].forEach(p => {
-    const map = I.settings.keys[p], pad = I.pads[p] || {};
-    ACT.forEach(a => {
-      let on = false;
-      for (const code in map) if (map[code] === undefined) continue;
-      for (const code2 in I.keys) if (I.keys[code2] && I.settings.keys[p][a] === code2) on = true;
-      if (p === 'p1' && I.touch[a]) on = true;
-      if (pad[a]) on = true;
-      if (on && !I.held[p][a]) I.setEdge(p, a);
-      I.held[p][a] = on;
-    });
+  P.forEach(p => {
+    const rev = I._rev[p] || {}, pad = I.pads[p] || {};
+    const on = {};
+    ACT.forEach(a => { on[a] = false; });
+    for (const code in I.keys) if (I.keys[code] && rev[code]) on[rev[code]] = true;
+    if (p === 'p1') ACT.forEach(a => { if (I.touch[a]) on[a] = true; });
+    ACT.forEach(a => { if (pad[a]) on[a] = true; });
+    ACT.forEach(a => { if (on[a] && !I.held[p][a]) I.setEdge(p, a); I.held[p][a] = on[a]; });
   });
 };
 I.endFrame = function () {
-  ['p1', 'p2'].forEach(p => {
-    ACT.forEach(a => { I.edge[p][a] = false; I.remoteJust[p][a] = false; });
-  });
+  P.forEach(p => ACT.forEach(a => { I.edge[p][a] = false; I.remoteJust[p][a] = false; }));
 };
 I.tick = function () {
-  ['p1', 'p2'].forEach(p => ACT.forEach(a => { if (I.buf[p][a] > 0) I.buf[p][a]--; }));
+  P.forEach(p => ACT.forEach(a => { if (I.buf[p][a] > 0) I.buf[p][a]--; }));
 };
 I.clear = function () {
   I.keys = {}; I.touch = {};
-  ['p1', 'p2'].forEach(p => {
-    ACT.forEach(a => { I.held[p][a] = false; I.buf[p][a] = 0; I.edge[p][a] = false; });
-  });
+  P.forEach(p => ACT.forEach(a => { I.held[p][a] = false; I.buf[p][a] = 0; I.edge[p][a] = false; }));
 };
 I.mask = function (p) {
   let m = 0;
-  ['left', 'right', 'up', 'down', 'attack', 'jump', 'special', 'grab'].forEach((a, i) => { if (I.held[p][a]) m |= 1 << i; });
+  GAME.forEach((a, i) => { if (I.held[p][a]) m |= 1 << i; });
   return m;
 };
 I.justMask = function (p) {
   let m = 0;
-  ['left', 'right', 'up', 'down', 'attack', 'jump', 'special', 'grab'].forEach((a, i) => { if (I.edge[p][a] || I.buf[p][a] === BUF) m |= 1 << i; });
+  GAME.forEach((a, i) => { if (I.edge[p][a] || I.buf[p][a] === BUF) m |= 1 << i; });
   return m;
 };
-I.ACTIONS = ['left', 'right', 'up', 'down', 'attack', 'jump', 'special', 'grab'];
+I.ACTIONS = GAME;
+I.PAD_NAMES = PAD_NAMES;
 })(globalThis.GG = globalThis.GG || {});
 
 
@@ -2180,9 +2314,11 @@ const FOOD = G.FOOD = {
 const DROPS = ['adana', 'adana', 'shish', 'shish', 'lahmacun', 'kunefe', 'doner'];
 const DIFF = { 0: { hp: .85, dmg: .8, slots: 1, cool: 1.25 }, 1: { hp: 1, dmg: 1, slots: 2, cool: 1 }, 2: { hp: 1.2, dmg: 1.2, slots: 3, cool: .8 } };
 
-/* ---------------- input action names ---------------- */
-const ACT = ['left', 'right', 'up', 'down', 'attack', 'jump', 'special', 'grab', 'start', 'pause'];
-G.ACT = ACT;
+/* ---------------- input action names (G.ACT lives in core.js) ---------------- */
+const ACT = G.ACT;
+/* settings rows: index 7 opens CONTROLS, index 8 leaves */
+const SETTINGS_ROWS = ['set_music', 'set_sfx', 'set_shake', 'set_flash', 'set_scan', 'set_lang', 'set_rumble', 'set_keys', 'set_back'];
+G.SETTINGS_ROWS = SETTINGS_ROWS;
 
 class Game {
   constructor(opts) {
@@ -2287,6 +2423,10 @@ class Game {
   consume(a, p) { return G.Input.consume(p ? 'p2' : 'p1', a); }
   axisX(p) { return (this.held('right', p) ? 1 : 0) - (this.held('left', p) ? 1 : 0); }
   axisY(p) { return (this.held('down', p) ? 1 : 0) - (this.held('up', p) ? 1 : 0); }
+  /* menus follow one pair of buttons everywhere: LIGHT / JUMP / START confirm,
+     HEAVY / GRAB / PAUSE back out - Z and X on the keyboard, A and B on the pad */
+  confirm() { return this.just('start') || this.just('attack') || this.just('jump'); }
+  cancel() { return this.just('pause') || this.just('heavy') || this.just('grab'); }
 
   /* ---------------- update ---------------- */
   update() {
@@ -2303,14 +2443,16 @@ class Game {
     const I = G.Input;
     if (this.screen === 'join') { this.navJoin(); return; }
     if (this.screen === 'lobby') { this.navLobby(); return; }
-    if (I.just('p1', 'pause') || I.just('p1', 'back')) this.onBack();
-    if (this.screen === 'title') { if (I.just('p1', 'start') || I.just('p1', 'attack') || I.just('p1', 'jump')) this.goto('main'); }
+    if (this.screen === 'play') { if (I.just('p1', 'pause')) this.onBack(); return; }
+    /* the controls screen reads its own cancel so a rebind never closes it */
+    if (this.cancel() && !(this.screen === 'settings' && this.cfg)) { this.onBack(); return; }
+    if (this.screen === 'title') { if (this.confirm()) this.goto('main'); }
     else if (this.screen === 'main' || this.screen === 'modes' || this.screen === 'settings' || this.screen === 'credits' || this.screen === 'howto' || this.screen === 'online') this.navScreen();
     else if (this.screen === 'select') this.navSelect();
     else if (this.screen === 'pause') this.navPause();
-    else if (this.screen === 'clear') { if (I.just('p1', 'start') || I.just('p1', 'attack')) this.nextStage(); }
+    else if (this.screen === 'clear') { if (this.confirm()) this.nextStage(); }
     else if (this.screen === 'over') this.navOver();
-    else if (this.screen === 'victory') { if (I.just('p1', 'start') || I.just('p1', 'attack')) this.goto('title'); }
+    else if (this.screen === 'victory') { if (this.confirm()) this.goto('title'); }
   }
   updateLobbyInput() {
     if (this.screen === 'join') this.navJoin();
@@ -2318,15 +2460,16 @@ class Game {
   }
   navScreen() {
     const sc = this.screen;
+    if (this.cfg) { this.navRemap(); return; }
     const rows = sc === 'main' ? ['mode_solo', 'mode_local', 'mode_online', 'main_training', 'main_howto', 'main_settings', 'main_credits']
-      : sc === 'settings' ? ['set_music', 'set_sfx', 'set_shake', 'set_flash', 'set_scan', 'set_lang', 'set_keys', 'set_back']
+      : sc === 'settings' ? SETTINGS_ROWS
       : sc === 'online' ? ['online_host', 'online_join', 'online_local', 'mode_back']
       : sc === 'howto' ? ['mode_back'] : ['mode_back'];
     if (G.Input.just('p1', 'up')) { this.menu = (this.menu + rows.length - 1) % rows.length; this.blip(); }
     if (G.Input.just('p1', 'down')) { this.menu = (this.menu + 1) % rows.length; this.blip(); }
     const left = G.Input.just('p1', 'left'), right = G.Input.just('p1', 'right');
     if (sc === 'settings') this.adjust(this.menu, right ? 1 : left ? -1 : 0);
-    if (G.Input.just('p1', 'start') || G.Input.just('p1', 'attack')) {
+    if (this.confirm()) {
       if (sc === 'main') {
         if (this.menu === 0) { this.mode = 'solo'; this.goto('select'); }
         else if (this.menu === 1) { this.mode = 'local'; this.goto('select'); }
@@ -2337,8 +2480,8 @@ class Game {
         else this.goto('credits');
         this.blip(true);
       } else if (sc === 'settings') {
-        if (this.menu === 7) this.goto('main');
-        else if (this.menu === 6) this.cfg = { player: 0, row: 0, waiting: false };
+        if (this.menu === 8) this.goto('main');
+        else if (this.menu === 7) this.cfg = { player: 0, row: 0, tab: 'keys', waiting: false, padWaiting: false };
         else this.adjust(this.menu, 1);
       } else if (sc === 'online') {
         if (this.menu === 0) this.startHost();
@@ -2347,7 +2490,6 @@ class Game {
         else this.goto('main');
       } else this.goto('main');
     }
-    if (this.cfg) this.navRemap();
   }
   adjust(row, dir) {
     if (!dir) return;
@@ -2358,26 +2500,56 @@ class Game {
     else if (row === 3) s.flash = s.flash ? 0 : 1;
     else if (row === 4) s.scanlines = s.scanlines ? 0 : 1;
     else if (row === 5) { s.lang = s.lang === 'en' ? 'tr' : 'en'; }
-    if (row <= 5) { G.saveSettings(s); this.blip(); }
+    else if (row === 6) s.rumble = s.rumble ? 0 : 1;
+    if (row <= 6) { G.saveSettings(s); this.blip(); }
     if (this.audio) this.audio.applySettings(s);
   }
+  /* CONTROLS: KEYBOARD remaps one player's keys, CONTROLLER remaps the shared
+     standard-pad layout. Both tabs list the same actions plus a RESET row, and
+     clicking a drawn key or pad button jumps straight to binding it. */
   navRemap() {
-    const c = this.cfg, keys = ACT;
-    if (c.waiting) {
-      const code = G.Input.captureKey();
-      if (code) {
-        const other = this.settings.keys[c.player ? 'p2' : 'p1'];
-        if (Object.keys(other).some(k => k !== keys[c.row] && other[k] === code)) { this.toast = this.tr('keys_conflict'); this.toastT = 90; }
-        else { other[keys[c.row]] = code; G.saveSettings(this.settings); c.waiting = false; this.blip(true); }
+    const c = this.cfg, I = G.Input;
+    const count = ACT.length + 1, resetRow = ACT.length;
+    if (c.tab === 'pad') {
+      if (c.padWaiting) {
+        const cap = I.takePadCapture();
+        if (cap) {
+          const a = ACT[c.row];
+          if (a) I.setPadBinding(a, cap.index);
+          c.padWaiting = false; this.blip(true);
+        } else if (this.just('pause')) { c.padWaiting = false; I.setPadWaiting(false); }
+        return;
       }
-      if (G.Input.just('p1', 'back')) c.waiting = false;
+      if (I.just('p1', 'up')) { c.row = (c.row + count - 1) % count; this.blip(); }
+      if (I.just('p1', 'down')) { c.row = (c.row + 1) % count; this.blip(); }
+      if (I.just('p1', 'left') || I.just('p1', 'right') || this.just('special')) { c.tab = 'keys'; this.blip(); return; }
+      if (this.confirm()) {
+        if (c.row === resetRow) { I.resetBindings(); this.blip(true); }
+        else { c.padWaiting = true; I.setPadWaiting(true); }
+      }
+      if (this.cancel()) this.cfg = null;
       return;
     }
-    if (G.Input.just('p1', 'up')) { c.row = (c.row + keys.length - 1) % keys.length; this.blip(); }
-    if (G.Input.just('p1', 'down')) { c.row = (c.row + 1) % keys.length; this.blip(); }
-    if (G.Input.just('p1', 'left') || G.Input.just('p1', 'right')) { c.player = c.player ? 0 : 1; this.blip(); }
-    if (G.Input.just('p1', 'start') || G.Input.just('p1', 'attack')) c.waiting = true;
-    if (G.Input.just('p1', 'back')) this.cfg = null;
+    const keys = this.settings.keys[c.player ? 'p2' : 'p1'];
+    if (c.waiting) {
+      const code = I.captureKey();
+      if (code) {
+        const a = ACT[c.row];
+        if (Object.keys(keys).some(k => k !== a && keys[k] === code)) { this.toastMsg(this.tr('keys_conflict')); }
+        else { keys[a] = code; G.saveSettings(this.settings); I.refresh(); this.blip(true); }
+        c.waiting = false;
+      } else if (I.just('p1', 'pause')) { c.waiting = false; I.setWaiting(false); }
+      return;
+    }
+    if (I.just('p1', 'up')) { c.row = (c.row + count - 1) % count; this.blip(); }
+    if (I.just('p1', 'down')) { c.row = (c.row + 1) % count; this.blip(); }
+    if (I.just('p1', 'left') || I.just('p1', 'right')) { c.player = c.player ? 0 : 1; this.blip(); }
+    if (this.just('special')) { c.tab = 'pad'; this.blip(); return; }
+    if (this.confirm()) {
+      if (c.row === resetRow) { I.resetBindings(); this.blip(true); }
+      else { c.waiting = true; I.setWaiting(true); }
+    }
+    if (this.cancel()) { this.cfg = null; I.setWaiting(false); }
   }
   goto(s) {
     this.screen = s; this.menu = 0; this.sub = 0;
@@ -2404,7 +2576,7 @@ class Game {
       if (G.Input.just('p2', 'left')) { this.selP2 = (this.selP2 + n - 1) % n; this.blip(); }
       if (G.Input.just('p2', 'right')) { this.selP2 = (this.selP2 + 1) % n; this.blip(); }
     }
-    if (G.Input.just('p1', 'start') || G.Input.just('p1', 'attack')) {
+    if (this.confirm()) {
       this.p1 = G.CH_ORDER[this.sel];
       this.p2 = this.mode === 'local' ? G.CH_ORDER[this.selP2 === this.sel ? (this.selP2 + 1) % n : this.selP2] : 'vv';
       if (this.mode === 'online') { this.beginOnlineLobby(); return; }
@@ -2417,7 +2589,7 @@ class Game {
     if (this.mode === 'online' && !this.isHost()) return;    /* guest waits for the host */
     if (G.Input.just('p1', 'up')) { this.menu = (this.menu + rows.length - 1) % rows.length; this.blip(); }
     if (G.Input.just('p1', 'down')) { this.menu = (this.menu + 1) % rows.length; this.blip(); }
-    if (G.Input.just('p1', 'start') || G.Input.just('p1', 'attack')) {
+    if (this.confirm()) {
       if (this.menu === 0) this.resume();
       else if (this.menu === 1) { this.restartStage(); }
       else if (this.menu === 2) { this.pauseHost = true; this.goto('settings'); this.returnScreen = 'pause'; }
@@ -2430,7 +2602,7 @@ class Game {
     const rows = ['over_continue', 'over_title_btn'];
     if (G.Input.just('p1', 'up') || G.Input.just('p1', 'left')) { this.menu = 0; this.blip(); }
     if (G.Input.just('p1', 'down') || G.Input.just('p1', 'right')) { this.menu = 1; this.blip(); }
-    if (G.Input.just('p1', 'start') || G.Input.just('p1', 'attack')) {
+    if (this.confirm()) {
       if (this.menu === 0) { this.lives = 3; this.newGame(this.mode, { stage: this.stageIdx }); }
       else this.goto('title');
       this.blip(true);
@@ -2543,6 +2715,7 @@ class Game {
     if (ax) p.face = ax;
     if (this.consume('jump', p.pid) && p.state !== 'land') { p.state = 'jump'; p.vz = JUMPV; p.vx *= .9; p.vy *= .6; this.setAnim(p, 'jump'); if (this.audio) this.audio.sfx('jump'); return; }
     if (this.consume('special', p.pid) && p.hype > 3) { this.startSpecial(p); return; }
+    if (this.consume('heavy', p.pid)) { this.startHeavy(p); return; }
     if (this.consume('attack', p.pid)) { this.startAttack(p, p.chainTimer > 0 && p.step < 2 ? p.step + 1 : 0); return; }
     if (this.consume('grab', p.pid)) { this.tryGrab(p); if (p.state === 'grab') return; }
     const spd = p.baseSpd;
@@ -2560,23 +2733,42 @@ class Game {
   walkPhase(e, sp) { e.phase = (e.phase + sp / e.stride) % 1; e.frame = Math.floor(e.phase * 8) % 8; }
   startAttack(p, step) {
     p.state = 'attack'; p.step = clamp(step, 0, 2); p.hitSet = new Set(); p.swung = false;
+    p.heavy = false; p.queued = false;
     p.vx *= .15; p.vy *= .15;
     this.restartAnim(p, ['a1', 'a2', 'a3'][p.step]);
     if (this.audio) this.audio.sfx('swing');
   }
+  /* HEAVY: the finisher swing on its own button - slower and stronger, and it
+     always takes the target off their feet. It never chains into the combo. */
+  startHeavy(p) {
+    p.state = 'attack'; p.step = 2; p.heavy = true; p.queued = false; p.hitSet = new Set();
+    p.vx *= .12; p.vy *= .12;
+    this.restartAnim(p, 'a3');
+    if (this.audio) this.audio.sfx('swing');
+  }
+  heavyMove(p) {
+    const m = p.def.moves[2];
+    return {
+      box: m.box, active: m.active, dmg: Math.round(m.dmg * 1.3), kb: m.kb * 1.2,
+      stun: m.stun + 8, hs: m.hs + 3, hype: Math.max(2, m.hype - 3), knock: true,
+      launch: (m.launch || 3) * 1.06
+    };
+  }
   playerAttack(p) {
-    const mv = p.def.moves[p.step];
-    /* a tap during the move is queued and fires on recovery: forgiving, not mashed */
-    if (this.consume('attack', p.pid)) p.queued = true;
+    const mv = p.heavy ? this.heavyMove(p) : p.def.moves[p.step];
+    /* a tap during the move is queued and fires on recovery: forgiving, not mashed.
+       HEAVY is one committed blow, so it never queues a follow-up. */
+    if (!p.heavy && this.consume('attack', p.pid)) p.queued = true;
     this.advance(p, false);
     p.x += p.vx; p.vx *= .78;
     if (mv.active.includes(p.frame)) {
-      if (p.step === 2 && p.frame === 2 && !p.lunged2) { p.lunged2 = true; p.vx = p.face * 2.1; }
+      if (!p.heavy && p.step === 2 && p.frame === 2 && !p.lunged2) { p.lunged2 = true; p.vx = p.face * 2.1; }
       this.strike(p, mv, p.hitSet);
     }
     if (p.done) {
-      p.lunged2 = false;
-      const next = p.queued && p.step < 2 ? p.step + 1 : 0;
+      const wasHeavy = p.heavy;
+      p.lunged2 = false; p.heavy = false;
+      const next = !wasHeavy && p.queued && p.step < 2 ? p.step + 1 : 0;
       p.queued = false;
       p.chainTimer = next ? 16 : 0;
       p.step = next;
@@ -2653,7 +2845,7 @@ class Game {
     if (p.state === 'grab') {
       this.advance(p, true);
       if (this.consume('attack', p.pid)) { p.state = 'gstrike'; this.restartAnim(p, 'gstrike'); p.struck = false; }
-      else if (this.consume('grab', p.pid) || this.consume('jump', p.pid)) {
+      else if (this.consume('grab', p.pid) || this.consume('jump', p.pid) || this.consume('heavy', p.pid)) {
         const ax = this.axisX(p.pid); if (ax) p.face = ax;
         p.state = 'throw'; this.restartAnim(p, 'throw'); p.thrown = false;
       }
@@ -2807,6 +2999,7 @@ class Game {
     this.hitstop = Math.max(this.hitstop, mv.hs || 3);
     this.shake = Math.max(this.shake, heavy ? 3.4 : 1.5);
     this.spark(sx, t.y, sz, heavy, who.pid);
+    if (G.Input && G.Input.rumble) G.Input.rumble(knock ? .9 : heavy ? .6 : .32);
     if (this.audio) this.audio.sfx(t.hp <= 0 && !t.dummy ? 'ko' : heavy ? 'heavy' : 'hit');
     if (who.team === 'p') {
       if (t.team === 'e') {
@@ -3132,6 +3325,20 @@ class Game {
   /* pointer/touch: a rendered hot region was activated */
   clickHot(hot) {
     if (!hot) return;
+    if (this.cfg) {
+      if (hot.act === 'tab') { this.cfg.tab = hot.s; this.blip(); return; }
+      if (hot.act === 'ctlrow') { this.cfg.row = hot.i; this.blip(); return; }
+      if (hot.act === 'padcap') {
+        const a = G.Input.actionForPad(hot.i);
+        if (a) this.cfg.row = ACT.indexOf(a); else this.cfg.row = ACT.length;
+        this.cfg.tab = 'pad'; this.cfg.padWaiting = true; G.Input.setPadWaiting(true); return;
+      }
+      if (hot.act === 'keycap') {
+        const i = ACT.indexOf(hot.a); if (i >= 0) this.cfg.row = i;
+        this.cfg.tab = 'keys'; this.cfg.waiting = true; G.Input.setWaiting(true); return;
+      }
+      if (hot.act === 'reset') { G.Input.resetBindings(); this.blip(true); return; }
+    }
     if (hot.act === 'row' || hot.act === 'pick') { this.menu = hot.i; if (hot.act === 'pick') this.sel = hot.i; }
     this.activate();
   }
@@ -3150,9 +3357,9 @@ class Game {
     }
     if (sc === 'select') { this.navSelectConfirm(); return; }
     if (sc === 'settings') {
-      if (this.cfg) { this.cfg.waiting = true; return; }
-      if (this.menu === 6) this.cfg = { player: 0, row: 0, waiting: false };
-      else if (this.menu === 7) this.goto('main');
+      if (this.cfg) { this.cfg.tab = 'keys'; this.cfg.waiting = true; G.Input.setWaiting(true); return; }
+      if (this.menu === 7) this.cfg = { player: 0, row: 0, tab: 'keys', waiting: false, padWaiting: false };
+      else if (this.menu === 8) this.goto('main');
       else this.adjust(this.menu, 1);
       return;
     }
@@ -3188,7 +3395,7 @@ class Game {
   navJoin() {
     const I = G.Input;
     const code = G.Input.captureKey();
-    if (I.just('p1', 'back')) { this.goto('online'); return; }
+    if (this.cancel()) { this.goto('online'); return; }
     if (code) {
       if (code === 'Backspace') this.joinCode = (this.joinCode || '').slice(0, -1);
       else if (code === 'Enter') { if ((this.joinCode || '').length === 5) this.doJoin(); }
@@ -3206,10 +3413,10 @@ class Game {
   }
   navLobby() {
     const I = G.Input, L = this.lobby || {};
-    if (I.just('p1', 'back')) { this.leaveOnline(); return; }
+    if (this.cancel()) { this.leaveOnline(); return; }
     if (G.Input.keys['KeyC']) { try { navigator.clipboard.writeText(this.invite || ''); this.toastMsg('INVITE COPIED'); } catch (e) {} }
     if (!this.isHost()) {
-      if (I.just('p1', 'start') || I.just('p1', 'attack')) { this.ready = !this.ready; this.net.send({ t: 'ready', r: this.ready }); this.blip(true); }
+      if (this.confirm()) { this.ready = !this.ready; this.net.send({ t: 'ready', r: this.ready }); this.blip(true); }
       if (I.just('p1', 'left') || I.just('p1', 'right')) {
         const i = (G.CH_ORDER.indexOf(this.p2) + (I.just('p1', 'right') ? 1 : 2)) % 3;
         this.p2 = G.CH_ORDER[i]; this.net.send({ t: 'pick', f: this.p2 }); this.blip();
@@ -3225,7 +3432,7 @@ class Game {
       this.settings.stage = ((this.settings.stage | 0) + (I.just('p1', 'down') ? 1 : 3)) % 4;
       G.saveSettings(this.settings); this.net.pushLobby(); this.blip();
     }
-    if (I.just('p1', 'start') || I.just('p1', 'attack')) {
+    if (this.confirm()) {
       if (this.net.canStart()) { this.net.start(); this.blip(true); }
       else { this.toastMsg(this.tr('lobby_waiting')); }
     }
@@ -3555,7 +3762,9 @@ R.hud = function (g, ctx) {
 R.trainingPanel = function (g, ctx) {
   panel(ctx, LW - 106, 56, 100, 82, MAG, 'rgba(20,10,28,.85)');
   T(ctx, g.tr('train_title'), LW - 56, 64, 7, GOLD, 'center');
-  const rows = [['MOVE', 'ARROWS'], ['COMBO', 'ATTACK X3'], ['LAUNCH', 'ATTACK X3'], ['SPECIAL', 'HOLD SPECIAL'], ['GRAB', 'GRAB'], ['THROW', 'GRAB TWICE'], ['DUMMY', 'UP+GRAB']];
+  const K = (a) => String(G.KEYLABEL(g.settings.keys.p1 && g.settings.keys.p1[a])).slice(0, 7);
+  const rows = [['MOVE', 'ARROWS'], ['COMBO', K('attack') + ' X3'], ['HEAVY', K('heavy')],
+    ['SPECIAL', 'HOLD ' + K('special')], ['GRAB', K('grab')], ['THROW', K('grab') + ' X2'], ['DUMMY', 'UP+' + K('grab')]];
   rows.forEach((r, i) => { T(ctx, r[0], LW - 100, 76 + i * 8, 7, CREAM); T(ctx, r[1], LW - 12, 76 + i * 8, 7, DIM, 'right'); });
 };
 
@@ -3657,7 +3866,7 @@ R.main = function (g, ctx) {
     T(ctx, 'BEAT EM UP', 358, 152, 7, DIM, 'center');
     T(ctx, 'V' + G.VERSION, 358, 200, 7, DIM, 'center');
   }
-  T(ctx, 'ARROWS / WASD  SELECT      ENTER  CONFIRM', LW / 2, 258, 7, DIM, 'center');
+  T(ctx, 'Z  SELECT      X  BACK      A  PAD', LW / 2, 258, 7, DIM, 'center');
 };
 R.select = function (g, ctx) {
   R.backdrop(g, ctx, g.settings.stage | 0, .62);
@@ -3738,46 +3947,152 @@ R.settings = function (g, ctx) {
     if (k === 'set_flash') return tr(g, s.flash ? 'on' : 'off');
     if (k === 'set_scan') return tr(g, s.scanlines ? 'on' : 'off');
     if (k === 'set_lang') return s.lang.toUpperCase();
+    if (k === 'set_rumble') return tr(g, s.rumble ? 'on' : 'off');
     if (k === 'set_keys') return '>';
     return '';
   };
   if (!g.cfg) {
-    const rows = ['set_music', 'set_sfx', 'set_shake', 'set_flash', 'set_scan', 'set_lang', 'set_keys', 'set_back'];
+    const rows = G.SETTINGS_ROWS;
     rows.forEach((k, i) => {
-      const y = 56 + i * 22, sel = g.menu === i;
-      if (sel) { ctx.fillStyle = GOLD; ctx.fillRect(64, y - 5, 352, 20); }
+      const y = 54 + i * 17, sel = g.menu === i;
+      if (sel) { ctx.fillStyle = GOLD; ctx.fillRect(64, y - 5, 352, 16); }
       T(ctx, tr(g, k), 72, y, 7, sel ? INK : CREAM);
       T(ctx, val(k), 404, y, 7, sel ? INK : GOLD2, 'right');
-      g.hot.push({ x: 64, y: y - 5, w: 352, h: 20, act: 'row', i: i });
+      g.hot.push({ x: 64, y: y - 5, w: 352, h: 16, act: 'row', i: i });
     });
-    T(ctx, 'LEFT / RIGHT TO CHANGE', LW / 2, 238, 7, DIM, 'center');
-  } else R.remap(g, ctx);
+    T(ctx, 'LEFT / RIGHT TO CHANGE', LW / 2, 232, 7, DIM, 'center');
+  } else R.controls(g, ctx);
 };
-R.remap = function (g, ctx) {
-  const c = g.cfg, keys = g.settings.keys[c.player ? 'p2' : 'p1'];
-  T(ctx, c.player ? tr(g, 'keys_p2') : tr(g, 'keys_p1'), LW / 2, 54, 7, c.player ? BLUE : GOLD2, 'center');
-  ACT_ROWS.forEach((a, i) => {
-    const y = 68 + i * 14, sel = c.row === i;
-    if (sel) { ctx.fillStyle = '#2a1d3a'; ctx.fillRect(120, y - 4, 240, 13); }
-    T(ctx, tr(g, 'act_' + a), 130, y, 7, sel ? GOLD2 : CREAM);
-    const label = c.waiting && sel ? tr(g, 'keys_press') : G.KEYLABEL(keys[a]);
-    T(ctx, label, 350, y, 7, c.waiting && sel ? MAG : CREAM, 'right');
+
+/* ---------------- controls (keyboard diagram + controller diagram) ---------------- */
+var ACT_ROWS = G.ACT;
+var SHORT = { left: '<', right: '>', up: '^', down: 'v', attack: 'ATK', heavy: 'HVY', jump: 'JMP',
+  grab: 'GRB', special: 'SPC', start: 'STA', pause: 'PSE' };
+function keycap(ctx, x, y, w, h, label, opts) {
+  opts = opts || {};
+  ctx.fillStyle = opts.active ? GOLD : (opts.fill || '#241733');
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = opts.active ? '#2a1d3a' : (opts.edge || '#6a4a8a');
+  ctx.fillRect(x, y, w, 1); ctx.fillRect(x, y + h - 1, w, 1);
+  ctx.fillRect(x, y, 1, h); ctx.fillRect(x + w - 1, y, 1, h);
+  if (label) T(ctx, label, x + Math.round(w / 2), y + Math.round((h - 7) / 2), 7,
+    opts.active ? INK : (opts.col || CREAM), 'center');
+}
+function padLabelOf(g, a) {
+  const m = g.settings.pad || {};
+  return m[a] === undefined ? '--' : G.Input.padName(m[a]);
+}
+R.controls = function (g, ctx) {
+  const c = g.cfg, padTab = c.tab === 'pad';
+  const keys = g.settings.keys[c.player ? 'p2' : 'p1'];
+  panel(ctx, 10, 10, 460, 250, GOLD, 'rgba(16,9,24,.97)');
+  T(ctx, tr(g, 'keys_title'), LW / 2, 18, 14, GOLD, 'center');
+  /* tabs */
+  [['ctl_tab_keys', 'keys'], ['ctl_tab_pad', 'pad']].forEach((tb, i) => {
+    const w = 96, h = 14, x = LW / 2 - 100 + i * 104, y = 34;
+    keycap(ctx, x, y, w, h, tr(g, tb[0]), { active: tb[1] === c.tab });
+    g.hot.push({ x: x, y: y, w: w, h: h, act: 'tab', s: tb[1] });
   });
-  T(ctx, 'UP/DOWN  SELECT    ENTER  REBIND    LEFT/RIGHT  PLAYER', LW / 2, 222, 7, DIM, 'center');
-  T(ctx, tr(g, 'keys_reset') + ': ' + (c.resetHint ? 'OK' : 'HOLD BACKSPACE'), LW / 2, 234, 7, DIM, 'center');
+  /* action rows + reset */
+  const top = 56;
+  ACT_ROWS.concat(['reset']).forEach((a, i) => {
+    const y = top + i * 12, sel = c.row === i, isReset = a === 'reset';
+    if (sel) { ctx.fillStyle = padTab ? '#33285a' : '#2a1d3a'; ctx.fillRect(18, y - 2, 200, 12); }
+    T(ctx, (sel ? '> ' : '  ') + (isReset ? tr(g, 'keys_reset') : tr(g, 'act_' + a)), 22, y, 7,
+      isReset ? MAG : sel ? GOLD2 : CREAM);
+    if (!isReset) {
+      const listening = (c.waiting || c.padWaiting) && sel;
+      const label = listening ? tr(g, 'keys_press') : padTab ? padLabelOf(g, a) : G.KEYLABEL(keys[a]);
+      T(ctx, label, 214, y, 7, listening ? MAG : sel ? CREAM : DIM, 'right');
+    }
+    g.hot.push({ x: 18, y: y - 2, w: 200, h: 12, act: 'ctlrow', i: i });
+  });
+  if (padTab) R.padDiagram(g, ctx, 228, 50); else R.keyDiagram(g, ctx, 228, 50, keys);
+  T(ctx, padTab ? tr(g, 'ctl_hint_pad') : tr(g, 'ctl_hint_keys'), LW / 2, 244, 7, DIM, 'center');
 };
-var ACT_ROWS = ['left', 'right', 'up', 'down', 'attack', 'jump', 'special', 'grab', 'start', 'pause'];
+R.keyDiagram = function (g, ctx, ox, oy, keys) {
+  const cap = (a, x, y, w) => {
+    keycap(ctx, x, y, w, 14, String(G.KEYLABEL(keys[a])).slice(0, 5));
+    T(ctx, SHORT[a] || '?', x + w / 2, y + 16, 7, DIM, 'center');
+    g.hot.push({ x: x, y: y, w: w, h: 14, act: 'keycap', a: a });
+  };
+  T(ctx, tr(g, 'ctl_lh'), ox + 4, oy, 7, MAG);
+  T(ctx, tr(g, 'ctl_rh'), ox + 112, oy, 7, MAG);
+  /* left hand: arrows in an inverted T */
+  cap('up', ox + 34, oy + 10, 30);
+  cap('left', ox + 4, oy + 38, 30);
+  cap('down', ox + 34, oy + 38, 30);
+  cap('right', ox + 64, oy + 38, 30);
+  /* right hand: light and heavy side by side, jump beside them, grab and
+     special on the row below - the emulator-pad grip */
+  cap('attack', ox + 112, oy + 10, 32);
+  cap('heavy', ox + 148, oy + 10, 32);
+  cap('jump', ox + 184, oy + 10, 40);
+  cap('grab', ox + 112, oy + 38, 32);
+  cap('special', ox + 148, oy + 38, 40);
+  T(ctx, tr(g, 'ctl_tap'), ox + 116, oy + 76, 7, DIM, 'center');
+};
+R.padDiagram = function (g, ctx, ox, oy) {
+  const W = 232, m = g.settings.pad || {};
+  /* traced silhouette: crown with two bumper humps, flanks and two grips */
+  ctx.strokeStyle = 'rgba(242,182,48,.4)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(ox + 26, oy + 20);
+  ctx.lineTo(ox + W - 26, oy + 20);
+  ctx.quadraticCurveTo(ox + W + 2, oy + 26, ox + W - 12, oy + 74);
+  ctx.quadraticCurveTo(ox + W - 24, oy + 112, ox + W - 50, oy + 106);
+  ctx.quadraticCurveTo(ox + W - 72, oy + 100, ox + W - 76, oy + 70);
+  ctx.quadraticCurveTo(ox + W / 2, oy + 44, ox + 76, oy + 70);
+  ctx.quadraticCurveTo(ox + 72, oy + 100, ox + 50, oy + 106);
+  ctx.quadraticCurveTo(ox + 24, oy + 112, ox + 12, oy + 74);
+  ctx.quadraticCurveTo(ox - 2, oy + 26, ox + 26, oy + 20);
+  ctx.closePath(); ctx.stroke();
+  const actOf = (i) => { for (const k in m) if (m[k] === i) return k; return null; };
+  /* every drawn button carries the action it fires; an unbound one keeps its
+     pad name so it can still be clicked and bound */
+  const draw = (i, x, y, w, h, glyph) => {
+    const a = actOf(i);
+    keycap(ctx, x, y, w, h, a ? (SHORT[a] || '?') : (glyph || G.Input.padName(i)),
+      { fill: a ? '#2a1d3a' : '#181022', col: a ? CREAM : DIM });
+    g.hot.push({ x: x, y: y, w: w, h: h, act: 'padcap', i: i });
+  };
+  draw(6, ox + 4, oy, 40, 11);            /* LT */
+  draw(4, ox + 4, oy + 15, 40, 11);       /* LB */
+  draw(7, ox + 188, oy, 40, 11);          /* RT */
+  draw(5, ox + 188, oy + 15, 40, 11);     /* RB */
+  draw(8, ox + 88, oy + 4, 32, 11);       /* BACK  */
+  draw(9, ox + 122, oy + 4, 32, 11);      /* START */
+  /* left stick + d-pad */
+  ctx.strokeStyle = 'rgba(242,182,48,.55)';
+  ctx.beginPath(); ctx.arc(ox + 44, oy + 62, 13, 0, 7); ctx.stroke();
+  T(ctx, tr(g, 'ctl_move'), ox + 44, oy + 59, 7, DIM, 'center');
+  draw(12, ox + 34, oy + 86, 18, 11, '^');
+  draw(13, ox + 34, oy + 110, 18, 11, 'v');
+  draw(14, ox + 14, oy + 98, 18, 11, '<');
+  draw(15, ox + 54, oy + 98, 18, 11, '>');
+  /* face diamond: Y heavy, X light, B grab, A jump */
+  draw(3, ox + 164, oy + 62, 24, 12);
+  draw(2, ox + 136, oy + 78, 24, 12);
+  draw(1, ox + 192, oy + 78, 24, 12);
+  draw(0, ox + 164, oy + 94, 24, 12);
+  T(ctx, G.Input.padConnected() ? tr(g, 'ctl_pad_ok') : tr(g, 'ctl_pad_none'), ox + 116, oy + 132, 7,
+    G.Input.padConnected() ? GREEN : DIM, 'center');
+  T(ctx, tr(g, 'ctl_pad_std'), ox + 116, oy + 144, 7, DIM, 'center');
+};
 R.howto = function (g, ctx) {
   R.backdrop(g, ctx, 0, .8);
   panel(ctx, 24, 16, 432, 238, GOLD, 'rgba(20,11,30,.95)');
   T(ctx, tr(g, 'howto_title'), LW / 2, 34, 14, GOLD, 'center');
-  const rows = [['howto_move', 'howto_move_d'], ['howto_atk', 'howto_atk_d'], ['howto_spec', 'howto_spec_d'], ['howto_jump', 'howto_jump_d'], ['howto_grab', 'howto_grab_d'], ['howto_food', 'howto_food_d'], ['howto_coop', 'howto_coop_d']];
+  const rows = [['howto_move', 'howto_move_d'], ['howto_atk', 'howto_atk_d'], ['howto_heavy', 'howto_heavy_d'],
+    ['howto_jump', 'howto_jump_d'], ['howto_grab', 'howto_grab_d'], ['howto_spec', 'howto_spec_d'],
+    ['howto_food', 'howto_food_d'], ['howto_coop', 'howto_coop_d']];
   rows.forEach((r, i) => {
-    const y = 52 + i * 24;
+    const y = 48 + i * 22;
     T(ctx, tr(g, r[0]), 36, y, 7, MAG);
     wrap(ctx, tr(g, r[1]), 36, y + 9, 400, 7, CREAM);
   });
-  T(ctx, 'ESC  ' + tr(g, 'set_back'), LW / 2, 242, 7, DIM, 'center');
+  T(ctx, 'Z / A / START  CONFIRM      X / B / ESC  BACK', LW / 2, 244, 7, DIM, 'center');
 };
 function wrap(ctx, str, x, y, w, size, col, align) {
   const words = String(str).split(' ');
@@ -4014,6 +4329,7 @@ function renderFrame(game) {
     let n = 0;
     while (acc >= STEP && n < 5) {
       G.Input.pollPads();
+      if (G.Input.padJustConnected) { game.toastMsg('CONTROLLER CONNECTED'); G.Input.padJustConnected = null; }
       G.Input.compute();
       game.update();
       G.Input.tick();

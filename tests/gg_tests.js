@@ -84,6 +84,43 @@ section('art');
   }), 'special frames are not reused attack frames');
 }
 
+section('controls');
+{
+  const p1 = settings.keys.p1, p2 = settings.keys.p2;
+  ok(p1.attack === 'KeyZ' && p1.heavy === 'KeyX', 'light and heavy sit together under the right hand (Z / X)', [p1.attack, p1.heavy]);
+  ok(p1.jump === 'Space' && p1.grab === 'KeyS' && p1.special === 'KeyV', 'jump, grab and special follow the same block', [p1.jump, p1.grab, p1.special]);
+  const shared = Object.keys(p1).filter(a => a !== 'pause' && a !== 'start' && p2[a] === p1[a]);
+  ok(!shared.length, 'the two keyboard blocks share no gameplay key', shared);
+  ok(settings.pad.attack === 2 && settings.pad.heavy === 3 && settings.pad.jump === 0 && settings.pad.grab === 1,
+    'pad face buttons are the beat-em-up layout: X light, Y heavy, A jump, B grab', settings.pad);
+  ok(G.Input.padName(settings.pad.special) === 'RT' && G.Input.padName(settings.pad.start) === 'START' && G.Input.padName(settings.pad.pause) === 'BACK',
+    'special sits on RT and Start / Back keep their menu roles');
+  ok(G.ACT.indexOf('heavy') > 0 && G.Input.ACTIONS.length === 9 && G.ACT.length === 11, 'heavy is a first-class action, on the wire too');
+  I.setPadBinding('special', 5);
+  ok(I.actionForPad(5) === 'special' && settings.pad.special === 5, 'a pad button can be rebound and is saved');
+  I.resetBindings();
+  ok(settings.pad.special === 7 && settings.keys.p1.attack === 'KeyZ', 'reset restores the documented defaults');
+  const g = mk();
+  g.screen = 'settings'; g.menu = 7;
+  tap(g, 'attack', 1);
+  ok(!!g.cfg && g.cfg.tab === 'keys', 'CONTROLS opens from settings on the keyboard tab');
+  tap(g, 'attack', 1);
+  ok(g.cfg.waiting === true, 'confirm starts listening for a key');
+  g.cfg.waiting = false; G.Input.setWaiting(false); g.cfg = null; g.screen = 'title';
+}
+
+section('heavy');
+{
+  const g = mk(); grounded(g); const p = g.players[0];
+  const e = put(g, 'jooce', 40, 0); e.hp = e.maxhp = 400;
+  const hp0 = e.hp;
+  tap(g, 'heavy', 1);
+  ok(p.state === 'attack' && p.heavy === true, 'HEAVY starts one committed swing');
+  for (let i = 0; i < 70; i++) step(g);
+  ok(e.hp <= hp0 - 12, 'HEAVY lands for more than a light hit', hp0 - e.hp);
+  ok(['knock', 'down', 'getup', 'dead'].includes(e.state), 'HEAVY always takes the target off their feet', e.state);
+}
+
 section('movement');
 {
   const g = mk(); const p = g.players[0]; p.x = 130; g.cam.x = 60; g.cam.max = 900;
@@ -268,7 +305,8 @@ section('network protocol');
   g2.applySnapshot(snap);
   ok(g2.players.length === 2 && Math.abs(g2.players[0].x - g.players[0].x) < 1, 'snapshot round-trip keeps fighter positions', [g2.players[0].x, g.players[0].x]);
   ok(g2.score === g.score && g2.lives === g.lives, 'snapshot carries score and lives');
-  ok(G.PROTO === 2, 'protocol version is explicit');
+  /* the input mask grew a HEAVY bit, so the wire format is a new version */
+  ok(G.PROTO === 3 && G.Input.ACTIONS.length === 9, 'protocol version is explicit and matches the input mask');
 }
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
