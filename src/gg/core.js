@@ -77,10 +77,28 @@ function textWidth(s, size) {
   for (const ch of String(s)) w += (GLYPH[ch] || UPPER[ch] ? 5 : 5) + 1;
   return Math.max(0, (w - 1) * sc);
 }
-G.textWidth = textWidth;
+G.textWidthBitmap = textWidth;
+/* Smooth display text (Lilita One). size = cap height in logical px, same contract as the old bitmap font. */
+const FONT = '"Lilita One", "Arial Black", Impact, sans-serif';
+let measureCtx = null;
+function mctx() { if (!measureCtx) { if (G.measureCtx) measureCtx = G.measureCtx; else if (typeof document !== 'undefined') measureCtx = document.createElement('canvas').getContext('2d'); } return measureCtx; }
+function textWidthSmooth(s, size) {
+  const m = mctx(), em = size * 1.34; if (!m) return String(s).length * em * .5;
+  m.font = em + 'px ' + FONT; return m.measureText(String(s)).width;
+}
+G.textWidth = textWidthSmooth;
 
 /** Draw text on a Canvas2D context. Size = pixel height of a glyph. */
 G.text = function (ctx, str, x, y, size, color, align, outline) {
+  const em = size * 1.34; str = String(str);
+  ctx.save(); ctx.font = em + 'px ' + FONT; ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+  const w = ctx.measureText(str).width, px = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x, by = y + size * 1.02;
+  ctx.lineJoin = 'round';
+  if (outline) { ctx.lineWidth = Math.max(1.1, size * .3); ctx.strokeStyle = outline; ctx.strokeText(str, px, by); }
+  else { ctx.fillStyle = 'rgba(8,4,16,.5)'; ctx.fillText(str, px + size * .07, by + size * .09); }
+  ctx.fillStyle = color; ctx.fillText(str, px, by); ctx.restore(); return w;
+};
+G.textBitmap = function (ctx, str, x, y, size, color, align, outline) {
   const sc = Math.max(1, Math.round(size / 7));
   const w = textWidth(str, sc * 7);
   let px = Math.round(align === 'center' ? x - w / 2 : align === 'right' ? x - w : x);

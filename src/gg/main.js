@@ -2,7 +2,7 @@
    pointer/touch, audio unlock, invite links. */
 (function (G) {
 'use strict';
-const LW = G.LW, LH = G.LH;
+const LW = G.LW, LH = G.LH, K = G.K = 3;   /* world is rendered at 3x: smooth hero art keeps its detail, pixel assets stay crisp */
 const view = document.getElementById('view');
 let low = null, ctx = null, scale = 2;
 
@@ -22,12 +22,13 @@ function fit() {
   view.width = Math.round(LW * scale * dpr); view.height = Math.round(LH * scale * dpr);
   const cssW = view.width / dpr, cssH = view.height / dpr;
   view.style.width = cssW + 'px'; view.style.height = cssH + 'px';
-  low.width = LW; low.height = LH;
+  low.width = LW * K; low.height = LH * K;
   ctx = low.getContext('2d'); ctx.imageSmoothingEnabled = false;
 }
 function renderFrame(game) {
   const v = view.getContext('2d');
-  v.imageSmoothingEnabled = false;
+  v.imageSmoothingEnabled = true; v.imageSmoothingQuality = 'high';
+  ctx.setTransform(K, 0, 0, K, 0, 0); ctx.imageSmoothingEnabled = false;
   v.fillStyle = '#07050c'; v.fillRect(0, 0, view.width, view.height);
   if (game.screen === 'play' || game.screen === 'pause' || game.screen === 'clear' || game.screen === 'over' || game.screen === 'victory') {
     const shake = game.settings.shake && game.shake > .3 && game.screen === 'play' ? game.shake : 0;
@@ -42,12 +43,14 @@ function renderFrame(game) {
   }
   G.Render.screen(game, ctx);
   if (game.settings.scanlines) G.Render.scanlines(ctx);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   v.drawImage(low, 0, 0, view.width, view.height);
 }
 
 (async function boot() {
+  try { await Promise.all([document.fonts.load('20px "Lilita One"', 'GREASE'), document.fonts.load('20px "Lilita One"', '\u011E\u0130\u015E')]); } catch (e) {}
   low = document.createElement('canvas');
-  low.width = LW; low.height = LH;
+  low.width = LW * K; low.height = LH * K;
   ctx = low.getContext('2d'); ctx.imageSmoothingEnabled = false;
   fit();
   window.addEventListener('resize', fit);
@@ -56,12 +59,13 @@ function renderFrame(game) {
   const game = G.game = new G.Game({ settings: settings, audio: G.Audio, net: null, meta: null });
   game.screen = 'loading';
   let pct = 0;
-  const drawLoad = (p, label) => { G.Render.loading(ctx, p, label); const v = view.getContext('2d'); v.imageSmoothingEnabled = false; v.drawImage(low, 0, 0, view.width, view.height); };
+  const drawLoad = (p, label) => { ctx.setTransform(K, 0, 0, K, 0, 0); G.Render.loading(ctx, p, label); ctx.setTransform(1, 0, 0, 1, 0, 0); const v = view.getContext('2d'); v.imageSmoothingEnabled = true; v.drawImage(low, 0, 0, view.width, view.height); };
   drawLoad(0, 'LOADING ATLAS');
   try {
-    const [meta, props] = await Promise.all([loadJSON('assets/gg/fighters.json'), loadJSON('assets/gg/props.json')]);
+    const [meta, props, hmeta, emeta] = await Promise.all([loadJSON('assets/gg/fighters.json'), loadJSON('assets/gg/props.json'), loadJSON('assets/gg/heroes.json'), loadJSON('assets/gg/enemies.json')]);
     pct = .15; drawLoad(pct, 'LOADING FIGHTERS');
     const fighters = await loadImage('assets/gg/fighters.png');
+    const heroes = await loadImage('assets/gg/heroes.png'), enemiesImg = await loadImage('assets/gg/enemies.png');
     const propsImg = await loadImage('assets/gg/props.png');
     const stages = [];
     for (let i = 0; i < G.STAGES.length; i++) {
@@ -73,7 +77,7 @@ function renderFrame(game) {
       ]);
       stages.push({ far: far, mid: mid, floor: floor });
     }
-    G.Render.init({ meta: meta, fighters: fighters, props: props, propsImg: propsImg, stages: stages });
+    G.Render.init({ meta: meta, hi: [{ meta: hmeta, img: heroes }, { meta: emeta, img: enemiesImg }], fighters: fighters, props: props, propsImg: propsImg, stages: stages });
     game.meta = meta;
     game.audio = G.Audio;
     G.Audio.applySettings(settings);

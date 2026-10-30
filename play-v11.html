@@ -4,6 +4,8 @@
 <meta name="theme-color" content="#120b18">
 <title>GREASE &amp; GOLD: WORLD TOUR</title>
 <style>
+@font-face{font-family:'Lilita One';src:url(assets/fonts/LilitaOne-latin.woff2) format('woff2');font-display:block;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Lilita One';src:url(assets/fonts/LilitaOne-latin-ext.woff2) format('woff2');font-display:block;unicode-range:U+0100-02AF,U+0304,U+0308,U+0329,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20CF,U+2113,U+2C60-2C7F,U+A720-A7FF}
 :root{--ink:#120b18;--gold:#f2b630;--mag:#d93aa0;--cream:#f6ead0}
 html,body{margin:0;height:100%;background:var(--ink);overflow:hidden;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none}
 body{display:flex;align-items:center;justify-content:center;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);box-sizing:border-box;background:radial-gradient(circle at 50% 40%,#22152f,#07050c 70%)}
@@ -38,7 +40,7 @@ body{display:flex;align-items:center;justify-content:center;padding:env(safe-are
   <div class="btn" id="bS" data-btn="special">SPC</div>
   <div class="btn" id="bP" data-btn="pause">II</div>
 </div>
-<script>window.GG_ASSET_HASH="5a5dc87daab4";</script>
+<script>window.GG_ASSET_HASH="9e025595092b";</script>
 <script>
 
 /* ---- core.js ---- */
@@ -121,10 +123,28 @@ function textWidth(s, size) {
   for (const ch of String(s)) w += (GLYPH[ch] || UPPER[ch] ? 5 : 5) + 1;
   return Math.max(0, (w - 1) * sc);
 }
-G.textWidth = textWidth;
+G.textWidthBitmap = textWidth;
+/* Smooth display text (Lilita One). size = cap height in logical px, same contract as the old bitmap font. */
+const FONT = '"Lilita One", "Arial Black", Impact, sans-serif';
+let measureCtx = null;
+function mctx() { if (!measureCtx) { if (G.measureCtx) measureCtx = G.measureCtx; else if (typeof document !== 'undefined') measureCtx = document.createElement('canvas').getContext('2d'); } return measureCtx; }
+function textWidthSmooth(s, size) {
+  const m = mctx(), em = size * 1.34; if (!m) return String(s).length * em * .5;
+  m.font = em + 'px ' + FONT; return m.measureText(String(s)).width;
+}
+G.textWidth = textWidthSmooth;
 
 /** Draw text on a Canvas2D context. Size = pixel height of a glyph. */
 G.text = function (ctx, str, x, y, size, color, align, outline) {
+  const em = size * 1.34; str = String(str);
+  ctx.save(); ctx.font = em + 'px ' + FONT; ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+  const w = ctx.measureText(str).width, px = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x, by = y + size * 1.02;
+  ctx.lineJoin = 'round';
+  if (outline) { ctx.lineWidth = Math.max(1.1, size * .3); ctx.strokeStyle = outline; ctx.strokeText(str, px, by); }
+  else { ctx.fillStyle = 'rgba(8,4,16,.5)'; ctx.fillText(str, px + size * .07, by + size * .09); }
+  ctx.fillStyle = color; ctx.fillText(str, px, by); ctx.restore(); return w;
+};
+G.textBitmap = function (ctx, str, x, y, size, color, align, outline) {
   const sc = Math.max(1, Math.round(size / 7));
   const w = textWidth(str, sc * 7);
   let px = Math.round(align === 'center' ? x - w / 2 : align === 'right' ? x - w : x);
@@ -3520,22 +3540,39 @@ function atlasFrame(meta, kit, anim, frame) {
   const an = k.anims[anim] || k.anims.idle; if (!an) return null;
   return an.frames[Math.min(frame | 0, an.frames.length - 1)];
 }
-R.frame = function (kit, anim, frame) { return R.A ? atlasFrame(R.A.meta, kit, anim, frame) : null; };
+R.frame = function (kit, anim, frame) {
+  if (!R.A) return null;
+  for (const h of (R.A.hi || [])) if (h.meta.kits[kit]) { const f = atlasFrame(h.meta, kit, anim, frame); if (f) return Object.assign({ res: h.meta.res, hi: true, img: h.img }, f); }
+  return atlasFrame(R.A.meta, kit, anim, frame);
+};
+/* hi-res (smooth) frames are drawn at 1/res with filtering on; pixel frames stay nearest */
+R.blit = function (ctx, f, dx, dy, mirrorX) {
+  if (f.hi) {
+    const k = f.res, q = G.K || 3, w = f.w / k, h = f.h / k;
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(f.img, f.x, f.y, f.w, f.h, Math.round(dx * q) / q, Math.round(dy * q) / q, w, h);
+    ctx.imageSmoothingEnabled = false;
+  } else ctx.drawImage(R.A.fighters, f.x, f.y, f.w, f.h, dx, dy, f.w, f.h);
+};
+R.portrait = function (kit) {
+  for (const h of (R.A.hi || [])) if (h.meta.kits[kit]) return { f: h.meta.kits[kit].portrait, img: h.img };
+  return { f: R.A.meta.kits[kit].portrait, img: R.A.fighters };
+};
 
 function shadow(ctx, x, y, w, a) { ctx.fillStyle = 'rgba(8,4,14,' + a + ')'; ctx.beginPath(); ctx.ellipse(x, y, w / 2, Math.max(2, w * .10), 0, 0, 7); ctx.fill(); }
-function panel(ctx, x, y, w, h, border, fill) {
-  ctx.fillStyle = INK; ctx.fillRect(x - 2, y - 2, w + 4, h + 4);
-  ctx.fillStyle = border || GOLD; ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
-  ctx.fillStyle = fill || PANEL; ctx.fillRect(x, y, w, h);
+function rrect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+function panel(ctx, x, y, w, h, border, fill) {   /* soft rounded glass panel */
+  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 5; ctx.shadowOffsetY = 1.5;
+  rrect(ctx, x, y, w, h, 5); const g = ctx.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, 'rgba(48,30,72,.92)'); g.addColorStop(1, 'rgba(20,12,34,.94)'); ctx.fillStyle = g; ctx.fill(); ctx.restore();
+  rrect(ctx, x + .5, y + .5, w - 1, h - 1, 4.6); ctx.lineWidth = 1.2; ctx.strokeStyle = border || GOLD; ctx.stroke();
+  rrect(ctx, x + 2, y + 1.6, w - 4, h * .38, 3); const hg = ctx.createLinearGradient(0, y, 0, y + h * .4); hg.addColorStop(0, 'rgba(255,255,255,.14)'); hg.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = hg; ctx.fill();
 }
-function gauge(ctx, x, y, w, h, pct, fill, back) {
-  ctx.fillStyle = INK; ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
-  ctx.fillStyle = back || '#3a1020'; ctx.fillRect(x, y, w, h);
-  const fw = Math.max(0, Math.round(w * Math.min(1, Math.max(0, pct))));
-  ctx.fillStyle = fill; ctx.fillRect(x, y, fw, h);
-  ctx.fillStyle = 'rgba(255,255,255,.28)'; ctx.fillRect(x, y, fw, Math.max(1, h >> 2));
-  ctx.fillStyle = 'rgba(0,0,0,.28)';
-  for (let i = 1; i < 10; i++) ctx.fillRect(x + Math.round(w * i / 10), y, 1, h);
+function gauge(ctx, x, y, w, h, pct, fill, back) {   /* rounded, glossy bar */
+  pct = Math.max(0, Math.min(1, pct)); const r = h / 2;
+  rrect(ctx, x, y, w, h, r); ctx.fillStyle = back || '#2a1030'; ctx.fill(); ctx.lineWidth = .8; ctx.strokeStyle = 'rgba(0,0,0,.65)'; ctx.stroke();
+  if (pct > 0) { const fw = Math.max(h, (w - 1) * pct); ctx.save(); rrect(ctx, x + .5, y + .5, fw, h - 1, r - .5); ctx.clip();
+    const g = ctx.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, '#fff'); g.addColorStop(.15, fill); g.addColorStop(1, fill); ctx.globalAlpha = 1; ctx.fillStyle = fill; ctx.fillRect(x, y, fw + 1, h);
+    ctx.fillStyle = 'rgba(255,255,255,.38)'; ctx.fillRect(x, y + .5, fw + 1, h * .34); ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(x, y + h * .7, fw + 1, h * .3); ctx.restore(); }
 }
 function keycap(ctx, label, x, y, active) {
   const w = Math.max(12, tw(label, 7) + 8);
@@ -3546,22 +3583,11 @@ function keycap(ctx, label, x, y, active) {
 }
 function drawSprite(ctx, kit, anim, frameNo, x, y, face, scale, tint) {
   const f = R.frame(kit, anim, frameNo); if (!f) return;
-  const im = R.A.fighters;
-  const w = f.w * (scale || 1), h = f.h * (scale || 1);
-  const dx = Math.round(x + (face < 0 ? -f.ox - f.w : f.ox) * (scale || 1));
-  const dy = Math.round(y + f.oy * (scale || 1));
+  const sc = scale || 1, rs = f.hi ? f.res : 1, ox = f.ox / rs, oy = f.oy / rs;
   ctx.save();
-  if (tint) {
-    ctx.globalAlpha = tint;
-  }
-  if (face < 0) {
-    /* mirror around the feet anchor: local x = f.ox maps back to x - f.ox */
-    ctx.translate(Math.round(x), 0);
-    ctx.scale(-1, 1);
-    ctx.drawImage(im, f.x, f.y, f.w, f.h, f.ox, dy, w, h);
-  } else {
-    ctx.drawImage(im, f.x, f.y, f.w, f.h, Math.round(x + f.ox), dy, w, h);
-  }
+  if (tint) ctx.globalAlpha = tint;
+  ctx.translate(Math.round(x), Math.round(y)); ctx.scale(face < 0 ? -sc : sc, sc);
+  R.blit(ctx, f, ox, oy);
   ctx.restore();
 }
 R.drawSprite = drawSprite;
@@ -3573,9 +3599,12 @@ R.world = function (g, ctx) {
   ctx.fillStyle = '#0b0812'; ctx.fillRect(0, 0, LW, LH);
   if (imgs) {
     const draw = (img, par) => {
-      const ox = Math.round(cam * par);
-      if (img.width < LW) ctx.drawImage(img, 0, 0);
-      else ctx.drawImage(img, Math.max(0, Math.min(img.width - LW, ox)), 0, LW, LH, 0, 0, LW, LH);
+      const S = img.height / LH;                       /* 1 = old pixel layers, 3 = hi-res painted layers */
+      const ox = Math.round(cam * par * S), sw = LW * S;
+      ctx.imageSmoothingEnabled = S > 1;
+      if (img.width < sw) ctx.drawImage(img, 0, 0, img.width / S, LH);
+      else ctx.drawImage(img, Math.max(0, Math.min(img.width - sw, ox)), 0, sw, img.height, 0, 0, LW, LH);
+      ctx.imageSmoothingEnabled = false;
     };
     draw(imgs.far, .18); draw(imgs.mid, .48); draw(imgs.floor, 1);
   } else {
@@ -3620,9 +3649,9 @@ R.world = function (g, ctx) {
         if (o.flash > 0 && o.flash % 4 < 2) { ctx.globalAlpha = .55; }
         if (o.face < 0) {
           ctx.translate(x, 0); ctx.scale(-1, 1);
-          ctx.drawImage(R.A.fighters, f.x, f.y, f.w, f.h, f.ox, y - z + f.oy, f.w, f.h);
+          R.blit(ctx, f, f.hi ? f.ox / f.res : f.ox, y - z + (f.hi ? f.oy / f.res : f.oy));
         } else {
-          ctx.drawImage(R.A.fighters, f.x, f.y, f.w, f.h, x + f.ox, y - z + f.oy, f.w, f.h);
+          R.blit(ctx, f, x + (f.hi ? f.ox / f.res : f.ox), y - z + (f.hi ? f.oy / f.res : f.oy));
         }
         ctx.restore();
       }
@@ -3703,16 +3732,16 @@ R.fx = function (g, ctx, cam) {
 R.hud = function (g, ctx) {
   const tr = (k) => g.tr(k);
   g.players.forEach((p, i) => {
-    const x = 6, y = 5 + i * 34, w = 138;
-    const pf = R.A.meta.kits[p.kitId].portrait;
-    panel(ctx, x, y, w, 30, i ? BLUE : GOLD, PANEL);
-    if (pf) { ctx.drawImage(R.A.fighters, pf.x, pf.y, pf.w, pf.h, x + 1, y + 1, 28, 28); }
-    T(ctx, i ? 'P2' : 'P1', x + 3, y + 21, 7, i ? BLUE : GOLD2, 'left', INK);
-    T(ctx, p.def.name.toUpperCase(), x + 32, y + 9, 7, CREAM);
-    gauge(ctx, x + 32, y + 12, 68, 6, p.hp / p.maxhp, p.hp / p.maxhp < .3 && ((g.t >> 3) & 1) ? '#ff6a4a' : '#ffd23a', '#4a0f12');
-    gauge(ctx, x + 32, y + 21, 68, 4, p.hype / 100, p.state === 'special' ? '#9be6ff' : '#38b6ff', '#0d2a55');
-    T(ctx, 'H', x + 103, y + 10, 7, '#9be6ff');
-    T(ctx, 'X' + Math.max(0, g.lives), x + 103, y + 21, 7, CREAM);
+    const x = 6, y = 5 + i * 38, w = 150, hp = p.hp / p.maxhp, low = hp < .3 && ((g.t >> 3) & 1);
+    const pp = R.portrait(p.kitId), pf = pp.f; panel(ctx, x, y, w, 34, i ? BLUE : GOLD, PANEL);
+    ctx.save(); ctx.beginPath(); ctx.arc(x + 17, y + 17, 13.5, 0, 7); ctx.clip(); ctx.fillStyle = '#3a2456'; ctx.fillRect(x + 3, y + 3, 28, 28);
+    if (pf) { ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.drawImage(pp.img, pf.x, pf.y, pf.w, pf.h, x + 2.5, y + 2.5, 29, 29); ctx.imageSmoothingEnabled = false; } ctx.restore();
+    ctx.beginPath(); ctx.arc(x + 17, y + 17, 14, 0, 7); ctx.lineWidth = 1.3; ctx.strokeStyle = i ? BLUE : GOLD2; ctx.stroke();
+    T(ctx, p.def.name.toUpperCase(), x + 36, y + 3, 7, CREAM, 'left', INK);
+    gauge(ctx, x + 36, y + 14, 80, 7, hp, low ? '#ff6a4a' : '#ffcf3a', '#4a0f12');
+    gauge(ctx, x + 36, y + 24, 80, 5, p.hype / 100, p.state === 'special' ? '#9be6ff' : '#38b6ff', '#0d2a55');
+    T(ctx, 'HYPE', x + 120, y + 21, 5, '#9be6ff', 'left', INK);
+    rrect(ctx, x + 120, y + 4, 26, 11, 5.5); ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fill(); T(ctx, 'x' + Math.max(0, g.lives), x + 133, y + 6, 6, CREAM, 'center', INK);
   });
   T(ctx, tr('hud_score'), LW - 8, 12, 7, DIM, 'right');
   T(ctx, String(g.score).padStart(7, '0'), LW - 8, 22, 7, CREAM, 'right');
@@ -3728,8 +3757,8 @@ R.hud = function (g, ctx) {
   }
   if (g.boss && g.boss.state !== 'spawn') {
     panel(ctx, 120, LH - 24, 240, 18, '#b0407a', '#2a1020');
-    const pf = R.A.meta.kits[g.boss.kitId].portrait;
-    if (pf) ctx.drawImage(R.A.fighters, pf.x, pf.y, pf.w, pf.h, 122, LH - 23, 16, 16);
+    const pp = R.portrait(g.boss.kitId), pf = pp.f;
+    if (pf) ctx.drawImage(pp.img, pf.x, pf.y, pf.w, pf.h, 122, LH - 23, 16, 16);
     T(ctx, g.boss.def.name.toUpperCase(), 142, LH - 17, 7, CREAM);
     gauge(ctx, 142, LH - 10, 212, 4, g.boss.hp / g.boss.maxhp, '#ff5aa8', '#3a0f2a');
   }
@@ -4181,7 +4210,7 @@ R.scanlines = function (ctx) {
    pointer/touch, audio unlock, invite links. */
 (function (G) {
 'use strict';
-const LW = G.LW, LH = G.LH;
+const LW = G.LW, LH = G.LH, K = G.K = 3;   /* world is rendered at 3x: smooth hero art keeps its detail, pixel assets stay crisp */
 const view = document.getElementById('view');
 let low = null, ctx = null, scale = 2;
 
@@ -4201,12 +4230,13 @@ function fit() {
   view.width = Math.round(LW * scale * dpr); view.height = Math.round(LH * scale * dpr);
   const cssW = view.width / dpr, cssH = view.height / dpr;
   view.style.width = cssW + 'px'; view.style.height = cssH + 'px';
-  low.width = LW; low.height = LH;
+  low.width = LW * K; low.height = LH * K;
   ctx = low.getContext('2d'); ctx.imageSmoothingEnabled = false;
 }
 function renderFrame(game) {
   const v = view.getContext('2d');
-  v.imageSmoothingEnabled = false;
+  v.imageSmoothingEnabled = true; v.imageSmoothingQuality = 'high';
+  ctx.setTransform(K, 0, 0, K, 0, 0); ctx.imageSmoothingEnabled = false;
   v.fillStyle = '#07050c'; v.fillRect(0, 0, view.width, view.height);
   if (game.screen === 'play' || game.screen === 'pause' || game.screen === 'clear' || game.screen === 'over' || game.screen === 'victory') {
     const shake = game.settings.shake && game.shake > .3 && game.screen === 'play' ? game.shake : 0;
@@ -4221,12 +4251,14 @@ function renderFrame(game) {
   }
   G.Render.screen(game, ctx);
   if (game.settings.scanlines) G.Render.scanlines(ctx);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   v.drawImage(low, 0, 0, view.width, view.height);
 }
 
 (async function boot() {
+  try { await Promise.all([document.fonts.load('20px "Lilita One"', 'GREASE'), document.fonts.load('20px "Lilita One"', '\u011E\u0130\u015E')]); } catch (e) {}
   low = document.createElement('canvas');
-  low.width = LW; low.height = LH;
+  low.width = LW * K; low.height = LH * K;
   ctx = low.getContext('2d'); ctx.imageSmoothingEnabled = false;
   fit();
   window.addEventListener('resize', fit);
@@ -4235,12 +4267,13 @@ function renderFrame(game) {
   const game = G.game = new G.Game({ settings: settings, audio: G.Audio, net: null, meta: null });
   game.screen = 'loading';
   let pct = 0;
-  const drawLoad = (p, label) => { G.Render.loading(ctx, p, label); const v = view.getContext('2d'); v.imageSmoothingEnabled = false; v.drawImage(low, 0, 0, view.width, view.height); };
+  const drawLoad = (p, label) => { ctx.setTransform(K, 0, 0, K, 0, 0); G.Render.loading(ctx, p, label); ctx.setTransform(1, 0, 0, 1, 0, 0); const v = view.getContext('2d'); v.imageSmoothingEnabled = true; v.drawImage(low, 0, 0, view.width, view.height); };
   drawLoad(0, 'LOADING ATLAS');
   try {
-    const [meta, props] = await Promise.all([loadJSON('assets/gg/fighters.json'), loadJSON('assets/gg/props.json')]);
+    const [meta, props, hmeta, emeta] = await Promise.all([loadJSON('assets/gg/fighters.json'), loadJSON('assets/gg/props.json'), loadJSON('assets/gg/heroes.json'), loadJSON('assets/gg/enemies.json')]);
     pct = .15; drawLoad(pct, 'LOADING FIGHTERS');
     const fighters = await loadImage('assets/gg/fighters.png');
+    const heroes = await loadImage('assets/gg/heroes.png'), enemiesImg = await loadImage('assets/gg/enemies.png');
     const propsImg = await loadImage('assets/gg/props.png');
     const stages = [];
     for (let i = 0; i < G.STAGES.length; i++) {
@@ -4252,7 +4285,7 @@ function renderFrame(game) {
       ]);
       stages.push({ far: far, mid: mid, floor: floor });
     }
-    G.Render.init({ meta: meta, fighters: fighters, props: props, propsImg: propsImg, stages: stages });
+    G.Render.init({ meta: meta, hi: [{ meta: hmeta, img: heroes }, { meta: emeta, img: enemiesImg }], fighters: fighters, props: props, propsImg: propsImg, stages: stages });
     game.meta = meta;
     game.audio = G.Audio;
     G.Audio.applySettings(settings);
